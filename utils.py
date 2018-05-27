@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import os
+import pickle
 import shutil
 import torch
 
@@ -60,6 +61,12 @@ def load_checkpoint(checkpoint, model, params, optimizer=None):
 # =============================================================================
 # Data related utils
 # =============================================================================
+def load_data(train_data_path, eval_data_path):
+    x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
+    x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
+    return x_tr, y_tr, x_ev, y_ev
+
+
 def center_rgb(x):
     return (x - 128) / 128
 

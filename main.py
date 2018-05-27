@@ -1,7 +1,6 @@
 import argparse
 import config
 import numpy as np
-import pickle
 import os
 import sys
 import torch
@@ -20,12 +19,6 @@ parser.add_argument('--mode', default='train', help='train | predict')
 parser.add_argument('--summary', default=True, help='if summarize model', action='store_true')
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
-
-
-def load_data(train_data_path, eval_data_path):
-    x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
-    x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
-    return x_tr, y_tr, x_ev, y_ev
 
 
 def train(x, y, model, optimizer, loss_fn, params):
@@ -88,7 +81,7 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
     losses_tr = []
     losses_ev = []
     best_loss_ev = float('inf')
-    x_tr, y_tr, x_ev, y_ev = load_data(train_data_path, eval_data_path)
+    x_tr, y_tr, x_ev, y_ev = utils.load_data(train_data_path, eval_data_path)
 
     for epoch in range(params.n_epochs):
         loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params).item()
