@@ -24,6 +24,7 @@ def gtsrb(root=config.GTSRB):
             x.append(im)
             y.append(c)
         split = len(y) // 10
+        x, y = utils.shuffle(x, y)
         x_ev += x[:split]
         y_ev += y[:split]
         x_te += x[split:2*split]
