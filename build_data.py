@@ -128,6 +128,6 @@ def gtsdb(params, root=config.GTSDB):
 
 if __name__ == "__main__":
     np.random.seed(0)
-    gtsrb()
-    params = utils.Params('./experiments/darknet/params.json')
+    # gtsrb()
+    params = utils.Params('./experiments/darknet_d/params.json')
     gtsdb(params)

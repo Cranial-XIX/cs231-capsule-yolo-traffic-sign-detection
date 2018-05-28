@@ -6,8 +6,8 @@ import sys
 import torch
 import utils
 
-from models import ConvNet, CapsuleNet, DarkNetD, DarkNetR, DarkCapsuleNet
-from loss_fns import cnn_loss, capsule_loss, dark_d_loss, dark_r_loss, darkcapsule_loss
+from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
+from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from tensorboardX import SummaryWriter
 from torch.optim import Adam
 from torchsummary import summary
@@ -140,13 +140,16 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     model_and_loss = {
-        'cnn'             : (ConvNet(params), cnn_loss),
-        'capsule'         : (CapsuleNet(params), capsule_loss),
-        'darknet_d'       : (DarkNetD(params), dark_d_loss),
-        'darknet_r'       : (DarkNetR(params), dark_r_loss),
-        'darkcapsule'     : (DarkCapsuleNet(params), darkcapsule_loss),
+        'cnn'             : (ConvNet, cnn_loss),
+        'capsule'         : (CapsuleNet, capsule_loss),
+        'darknet_d'       : (DarkNet, dark_loss),
+        'darknet_r'       : (DarkNet, dark_loss),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss),
     }
+
     model, loss_fn = model_and_loss[args.model]
+    model = model(params)
+    
     if args.summary:
         summary(model, config.input_shape[args.model])
 

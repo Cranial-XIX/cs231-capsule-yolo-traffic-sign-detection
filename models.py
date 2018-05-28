@@ -92,7 +92,7 @@ class CapsuleNet(nn.Module):
         scores = (x ** 2).sum(dim=-1) ** 0.5
         return scores
 
-class darknet(nn.Module):
+class DarkNet(nn.Module):
     def __init__(self, params):
         super().__init__()
         self.model = nn.Sequential(OrderedDict([
@@ -163,9 +163,12 @@ class darknet(nn.Module):
         # forward always defines connectivity
         out = self.model(x)
         out = out.permute(0, 2, 3, 1)
-        out_sigmoid = torch.sigmoid(out[:, :, :, 0:5 * params.num_boxes])
-        out_softmax = nn.functional.softmax(out[:, :, :, 5 * params.num_boxes:], dim = -1)
-        y = torch.cat((out_sigmoid, out_softmax), dim = -1)
+        out_sigmoid = torch.sigmoid(out[:, :, :, 0:5 * self.params.num_boxes])
+        if self.params.num_classes == 0:
+            y = out_sigmoid
+        else:
+            out_softmax = nn.functional.softmax(out[:, :, :, 5 * self.params.num_boxes:], dim = -1)
+            y = torch.cat((out_sigmoid, out_softmax), dim = -1)
         return y
 
 class DarkCapsuleNet(nn.Module):
