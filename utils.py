@@ -74,3 +74,78 @@ def center_rgb(x):
 def shuffle(x, y):
     i = np.random.permutation(len(y))
     return x[i], y[i]
+
+# =============================================================================
+# Bounding box related utils
+# =============================================================================
+def xy_to_cwh(box_xy):
+    # box_xy [x1, y1, x2, y2]
+    # Given top left point and right bottom point coordinates
+    # Compute center coordinates, height and weight
+    x1, y1, x2, y2 = box_xy
+    xc = (x1 + x2) / 2
+    yc = (y1 + y2) / 2
+    w = x2 - x1
+    h = y2 - y1
+    cwh = [xc, yc, w, h]
+    return cwh
+
+def cwh_to_xy(box_cwh):
+    # box_cwh (xc, yc, w, h)
+    # Given top left point and right bottom point coordinates
+    # Compute center coordinates, height and weight
+    xc, yc, w, h = box_cwh
+    x1 = xc - w / 2
+    x2 = xc + w / 2
+    y1 = yc - h / 2
+    y2 = yc + h / 2
+    xy = [x1, y1, x2, y2]
+    return xy
+
+def resize_box_xy(orig_hw, resized_hw, box_xy):
+    # Resize box
+    # orig_h, orig_w: orginal image size
+    # resized_h, resized_w: resized image size
+    # x1, y1, x2, y2: orginal box coords
+    orig_h, orig_w = orig_hw
+    resized_h, resized_w = resized_hw
+    x1, y1, x2, y2 = box_xy
+    w_ratio = 1. * resized_w / orig_w
+    h_ratio = 1. * resized_h / orig_h
+    resized_x1 = x1 * w_ratio
+    resized_x2 = x2 * w_ratio
+    resized_y1 = y1 * h_ratio
+    resized_y2 = y2 * h_ratio
+    resized_xy = [resized_x1, resized_y1, resized_x2, resized_y2]
+    return resized_xy
+
+def normalize_box_cwh(image_hw, num_grid, box_cwh):
+    # Normalize box height and weight to be 0-1
+    image_h, image_w = image_hw
+    xc, yc, box_w, box_h = box_cwh
+    normalized_w = 1. * box_w / image_w
+    normalized_h = 1. * box_h / image_h
+
+    grid_w = 1. * image_w / num_grid 
+    grid_h = 1. * image_h / num_grid 
+    col = int(xc / grid_w)
+    row = int(yc / grid_h)
+    normalized_xc = 1. * (xc - col * grid_w) / grid_w
+    normalized_yc = 1. * (yc - row * grid_h) / grid_h
+    normalized_cwh = [normalized_xc, normalized_yc, normalized_w, normalized_h]
+    positon = [row, col]
+    return normalized_cwh, positon
+
+def denormalize_box_cwh(image_hw, num_grid, norm_box_cwh, grid):
+    image_h, image_w = image_hw 
+    normalized_xc, normalized_yc, normalized_w, normalized_h = norm_box_cwh
+    row, col = grid
+
+    box_w = normalized_w * image_w
+    box_h = normalized_h * image_h
+    grid_w = 1. * image_w / num_grid 
+    grid_h = 1. * image_h / num_grid 
+    xc = normalized_xc * grid_w + col * grid_w 
+    yc = normalized_yc * grid_h + row * grid_h
+    cwh = [xc, yc, box_w, box_h]
+    return cwh
