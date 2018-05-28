@@ -59,6 +59,30 @@ def load_checkpoint(checkpoint, model, params, optimizer=None):
 
 
 # =============================================================================
+# Training related utils
+# =============================================================================
+def sine_and_cosine(x):
+    return np.sin(x), np.cos(x)
+
+
+def polar_transform(x):
+    assert x.shape[-1] == 5, "polar transform failed, dimension mismatched"
+    sh = x.shape
+    x = x.reshape(-1, 5)
+    pc, x, y, h, w = np.hsplit(x, 5)
+    r, f1, f2, f3, f4 = pc, x*np.pi, y*np.pi, h*np.pi, w*np.pi*2
+    (s1, c1), (s2, c2), (s3, c3), (s4, c4) = list(
+        map(sine_and_cosine, [f1, f2, f3, f4]))
+
+    x1 = s1
+    x2 = s1 * c2
+    x3 = s1 * s2 * c3
+    x4 = s1 * s2 * s3 * c4
+    x5 = s1 * s2 * s3 * s4
+
+    x_hat = r * np.concatenate([x1, x2, x3, x4, x5], 1)
+    return x_hat.reshape(*sh[:-1], 5)
+# =============================================================================
 # Data related utils
 # =============================================================================
 def load_data(train_data_path, eval_data_path):
