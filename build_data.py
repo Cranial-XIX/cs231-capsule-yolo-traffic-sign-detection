@@ -57,5 +57,5 @@ def gtsdb(root=config.GTSDB):
 
 
 if __name__ == "__main__":
-    np.random.rand(0)
+    np.random.seed(0)
     gtsrb()
