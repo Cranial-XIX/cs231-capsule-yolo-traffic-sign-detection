@@ -143,15 +143,15 @@ def resize_box_xy(orig_hw, resized_hw, box_xy):
     resized_xy = [resized_x1, resized_y1, resized_x2, resized_y2]
     return resized_xy
 
-def normalize_box_cwh(image_hw, num_grid, box_cwh):
+def normalize_box_cwh(image_hw, n_grid, box_cwh):
     # Normalize box height and weight to be 0-1
     image_h, image_w = image_hw
     xc, yc, box_w, box_h = box_cwh
     normalized_w = 1. * box_w / image_w
     normalized_h = 1. * box_h / image_h
 
-    grid_w = 1. * image_w / num_grid 
-    grid_h = 1. * image_h / num_grid 
+    grid_w = 1. * image_w / n_grid
+    grid_h = 1. * image_h / n_grid
     col = int(xc / grid_w)
     row = int(yc / grid_h)
     normalized_xc = 1. * (xc - col * grid_w) / grid_w
@@ -160,16 +160,16 @@ def normalize_box_cwh(image_hw, num_grid, box_cwh):
     positon = [row, col]
     return normalized_cwh, positon
 
-def denormalize_box_cwh(image_hw, num_grid, norm_box_cwh, grid):
+def denormalize_box_cwh(image_hw, n_grid, norm_box_cwh, grid):
     image_h, image_w = image_hw 
     normalized_xc, normalized_yc, normalized_w, normalized_h = norm_box_cwh
     row, col = grid
 
     box_w = normalized_w * image_w
     box_h = normalized_h * image_h
-    grid_w = 1. * image_w / num_grid 
-    grid_h = 1. * image_h / num_grid 
-    xc = normalized_xc * grid_w + col * grid_w 
+    grid_w = 1. * image_w / n_grid
+    grid_h = 1. * image_h / n_grid
+    xc = normalized_xc * grid_w + col * grid_w
     yc = normalized_yc * grid_h + row * grid_h
     cwh = [xc, yc, box_w, box_h]
     return cwh

@@ -159,5 +159,5 @@ if __name__ == '__main__':
         train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir+'/train.p', data_dir+'/eval.p', model_dir)
     if args.mode == 'overfit':
-                train_and_evaluate(model, optimizer, loss_fn, params,
+        train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir+'/small.p', data_dir+'/small.p', model_dir)

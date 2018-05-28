@@ -3,13 +3,11 @@
     "batch_size": 32,
     "n_epochs": 100,
     "cuda": true,
-    "save_summary_steps": 100,
-    "num_workers": 4,
     "l_coord": 5,
     "l_noobj": 0.5,
-    "num_boxes": 2,
-    "num_classes": 0,
+    "n_boxes": 2,
+    "n_classes": 0,
     "image_resize": 224,
     "capsule_input": 32,
-    "num_grid": 7
+    "n_grid": 7
 }

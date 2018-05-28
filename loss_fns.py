@@ -17,45 +17,45 @@ def compute_iou(boxes_pred, boxes_true):
     '''
     Compute intersection over union of two set of boxes
     Args:
-      boxes_pred: shape (num_objects, B, 4)
-      boxes_true: shape (num_objects, 1, 4)
+      boxes_pred: shape (n_objects, B, 4)
+      boxes_true: shape (n_objects, 1, 4)
     Return:
-      iou: shape (num_objects, B)
+      iou: shape (n_objects, B)
     '''
 
-    num_objects = boxes_pred.size(0)
+    n_objects = boxes_pred.size(0)
     B = boxes_pred.size(1)
 
     lt = torch.max(
-        boxes_pred[:,:,:2],                      # [num_objects, B, 2]
-        boxes_true[:,:,:2].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
+        boxes_pred[:,:,:2],                      # [n_objects, B, 2]
+        boxes_true[:,:,:2].expand(n_objects, B, 2)    # [n_objects, 1, 2] -> (n_objects, B, 2]
     )
 
     rb = torch.min(
-        boxes_pred[:,:,2:],                      # [num_objects, B, 2]
-        boxes_true[:,:,2:].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
+        boxes_pred[:,:,2:],                      # [n_objects, B, 2]
+        boxes_true[:,:,2:].expand(n_objects, B, 2)    # [n_objects, 1, 2] -> (n_objects, B, 2]
     )
 
-    wh = rb - lt # width and height => [num_objects, B, 2]
+    wh = rb - lt # width and height => [n_objects, B, 2]
     wh[wh<0] = 0 # if no intersection, set to zero
-    inter = wh[:,:,0] * wh[:,:,1] # [num_objects, B]
+    inter = wh[:,:,0] * wh[:,:,1] # [n_objects, B]
 
-    # [num_objects, B, 1] * [num_objects, B, 1] -> [num_objects, B]
+    # [n_objects, B, 1] * [n_objects, B, 1] -> [n_objects, B]
     area1 = (boxes_pred[:,:,2]-boxes_pred[:,:,0]) * (boxes_pred[:,:,2]-boxes_pred[:,:,0]) 
     
-    # [num_objects, 1, 1] * [num_objects, 1, 1] -> [num_objects, 1] -> [num_objects, B]
-    area2 = ((boxes_true[:,:,2]-boxes_true[:,:,0]) * (boxes_true[:,:,2]-boxes_true[:,:,0])).expand(num_objects, B)
+    # [n_objects, 1, 1] * [n_objects, 1, 1] -> [n_objects, 1] -> [n_objects, B]
+    area2 = ((boxes_true[:,:,2]-boxes_true[:,:,0]) * (boxes_true[:,:,2]-boxes_true[:,:,0])).expand(n_objects, B)
 
-    iou = inter / (area1 + area2 - inter) # [num_objects, B]
+    iou = inter / (area1 + area2 - inter) # [n_objects, B]
     
     return iou
 
 def dark_loss(y_pred, y_true, params):
-    # y_pred (batch_size, num_grid, num_grid, 5 * B + C)
-    # y_true (batch_size, num_grid, num_grid, 5 + C)
+    # y_pred (batch_size, n_grid, n_grid, 5 * B + C)
+    # y_true (batch_size, n_grid, n_grid, 5 + C)
     y_true = y_true.float()
-    l_coord, l_noobj, B, C = params.l_coord, params.l_noobj, params.num_boxes, params.num_classes
-    batch_size, num_grid, _, _ = y_true.shape
+    l_coord, l_noobj, B, C = params.l_coord, params.l_noobj, params.n_boxes, params.n_classes
+    batch_size, n_grid, _, _ = y_true.shape
 
     # seperate boxes and classes
     y_pred_boxes = y_pred[:, :, :, 0:5*B]
@@ -63,8 +63,8 @@ def dark_loss(y_pred, y_true, params):
     y_true_boxes = y_true[:, :, :, 0:5]
 
     # add one dimension to seperate B bounding boxes of y_pred
-    y_pred_boxes = y_pred_boxes.unsqueeze(-1).view(batch_size, num_grid, num_grid, B, 5) 
-    y_true_boxes = y_true_boxes.unsqueeze(-1).view(batch_size, num_grid, num_grid, 1, 5)
+    y_pred_boxes = y_pred_boxes.unsqueeze(-1).view(batch_size, n_grid, n_grid, B, 5) 
+    y_true_boxes = y_true_boxes.unsqueeze(-1).view(batch_size, n_grid, n_grid, 1, 5)
 
     # mask for grid cells with object and wihout object 
     obj_mask = (y_true_boxes[:, :, :, 0, 0] == 1) 
@@ -81,13 +81,13 @@ def dark_loss(y_pred, y_true, params):
     # Compute loss for boxes in grid cells containing object
     if len(y_pred_boxes[obj_mask]) != 0:
         # boxes coords (xc, yc, w, h) in grid cells with object
-        obj_true_xywh = y_true_boxes[obj_mask][:, :, 1:5]  #(num_objects, 1, 4)
-        obj_pred_xywh = y_pred_boxes[obj_mask][:, :, 1:5]  #(num_objects, B, 4)
-        obj_pred_pc = y_pred_boxes[obj_mask][:, :, 0]  #(num_objects, B)
-        num_objects = obj_true_xywh.shape[0]
+        obj_true_xywh = y_true_boxes[obj_mask][:, :, 1:5]  #(n_objects, 1, 4)
+        obj_pred_xywh = y_pred_boxes[obj_mask][:, :, 1:5]  #(n_objects, B, 4)
+        obj_pred_pc = y_pred_boxes[obj_mask][:, :, 0]  #(n_objects, B)
+        n_objects = obj_true_xywh.shape[0]
 
         # Compute iou between true boxes and B predicted boxes  
-        iou = compute_iou(obj_pred_xywh, obj_true_xywh)  #(num_objects, B)
+        iou = compute_iou(obj_pred_xywh, obj_true_xywh)  #(n_objects, B)
 
         # Find the target boxes responsible for prediction (boxes with max iou)
         max_iou, max_iou_indices = torch.max(iou, dim=1)
@@ -105,7 +105,7 @@ def dark_loss(y_pred, y_true, params):
         target_pred_pc = obj_pred_pc[target_mask]
         obj_loss_pc = torch.sum((target_pred_pc - 1)**2)
 
-        target_pred_xy = obj_pred_xywh[target_mask][:, 0:2]  #(num_objects, 2)
+        target_pred_xy = obj_pred_xywh[target_mask][:, 0:2]  #(n_objects, 2)
         target_true_xy = obj_true_xywh[:, 0, 0:2]
         obj_loss_xy = torch.sum((target_pred_xy - target_true_xy)**2)
 

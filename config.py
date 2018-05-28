@@ -27,7 +27,7 @@ model_dir = {
 input_shape = {
     'cnn'             : (3, 32, 32),
     'capsule'         : (3, 32, 32),
-    'darknet_d'       : (3, 32, 32),
-    'darknet_r'       : (3, 32, 32),
-    'darkcapsule'     : (3, 32, 32),
+    'darknet_d'       : (3, 224, 224),
+    'darknet_r'       : (3, 224, 224),
+    'darkcapsule'     : (3, 224, 224),
 }
