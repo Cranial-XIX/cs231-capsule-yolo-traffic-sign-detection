@@ -106,9 +106,9 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
         if is_best:
             best_loss_ev = loss_ev
 
-        print("train loss: {:05.3f} | eval loss: {:05.3f} |" \
-            " best eval loss: {:05.3f}".format(
-                loss_tr, loss_ev, best_loss_ev))
+        print("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
+            " best eval loss: {:05.3f}\n".format(
+                epoch, loss_tr, loss_ev, best_loss_ev))
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)

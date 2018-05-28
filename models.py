@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 import utils
 from collections import OrderedDict
@@ -95,6 +96,8 @@ class CapsuleNet(nn.Module):
 class DarkNet(nn.Module):
     def __init__(self, params):
         super().__init__()
+
+        self.params = params
         self.model = nn.Sequential(OrderedDict([
             ('conv_1', nn.Conv2d(3, 32, 3, padding=1, bias=False)),
             ('bn_1', nn.BatchNorm2d(32, momentum=0.01)),
@@ -107,7 +110,7 @@ class DarkNet(nn.Module):
             ('conv_3', nn.Conv2d(64, 128, 3, padding=1, bias=False)),
             ('bn_3', nn.BatchNorm2d(128, momentum=0.01)),
             ('relu_3', nn.LeakyReLU(0.1)),
-            ('conv_4', nn.Conv2d(128, 64, 1, padding=0, bias=False)),
+            ('conv_4', nn.Conv2d(128, 64, 1, bias=False)),
             ('bn_4', nn.BatchNorm2d(64, momentum=0.01)),
             ('relu_4', nn.LeakyReLU(0.1)),
             ('conv_5', nn.Conv2d(64, 128, 3, padding=1, bias=False)),
@@ -117,7 +120,7 @@ class DarkNet(nn.Module):
             ('conv_6', nn.Conv2d(128, 256, 3, padding=1, bias=False)),
             ('bn_6', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_6', nn.LeakyReLU(0.1)),
-            ('conv_7', nn.Conv2d(256, 128, 1, padding=0, bias=False)),
+            ('conv_7', nn.Conv2d(256, 128, 1, bias=False)),
             ('bn_7', nn.BatchNorm2d(128, momentum=0.01)),
             ('relu_7', nn.LeakyReLU(0.1)),
             ('conv_8', nn.Conv2d(128, 256, 3, padding=1, bias=False)),
@@ -127,13 +130,13 @@ class DarkNet(nn.Module):
             ('conv_9', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
             ('bn_9', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_9', nn.LeakyReLU(0.1)),
-            ('conv_10', nn.Conv2d(512, 256, 1, padding=0, bias=False)),
+            ('conv_10', nn.Conv2d(512, 256, 1, bias=False)),
             ('bn_10', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_10', nn.LeakyReLU(0.1)),
             ('conv_11', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
             ('bn_11', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_11', nn.LeakyReLU(0.1)),
-            ('conv_12', nn.Conv2d(512, 256, 1, padding=0, bias=False)),
+            ('conv_12', nn.Conv2d(512, 256, 1, bias=False)),
             ('bn_12', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_12', nn.LeakyReLU(0.1)),
             ('conv_13', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
@@ -143,32 +146,33 @@ class DarkNet(nn.Module):
             ('conv_14', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_14', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_14', nn.LeakyReLU(0.1)),
-            ('conv_15', nn.Conv2d(1024, 512, 1, padding=0, bias=False)),
+            ('conv_15', nn.Conv2d(1024, 512, 1, bias=False)),
             ('bn_15', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_15', nn.LeakyReLU(0.1)),
             ('conv_16', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_16', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_16', nn.LeakyReLU(0.1)),
-            ('conv_17', nn.Conv2d(1024, 512, 1, padding=0, bias=False)),
+            ('conv_17', nn.Conv2d(1024, 512, 1, bias=False)),
             ('bn_17', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_17', nn.LeakyReLU(0.1)),
             ('conv_18', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_18', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_18', nn.LeakyReLU(0.1)),
-            ('conv_19', nn.Conv2d(1024, 5 * params.n_boxes + params.n_classes, 1, padding=0, bias=False))
+            ('conv_19', nn.Conv2d(1024,
+                5 * params.n_boxes + params.n_classes, 1, bias=False))
         ]))
-        self.params = params
 
     def forward(self, x):
         # forward always defines connectivity
-        out = self.model(x)
-        out = out.permute(0, 2, 3, 1)
-        out_sigmoid = torch.sigmoid(out[:, :, :, 0:5 * self.params.n_boxes])
+        out = self.model(x).permute(0, 2, 3, 1)
+        split = 5*self.params.n_boxes
+        out_box = F.sigmoid(out[:,:,:,:split])
+
         if self.params.n_classes == 0:
-            y = out_sigmoid
+            y = out_box
         else:
-            out_softmax = nn.functional.softmax(out[:, :, :, 5 * self.params.n_boxes:], dim = -1)
-            y = torch.cat((out_sigmoid, out_softmax), dim = -1)
+            out_cls = F.softmax(out[:,:,:,split:], dim=-1)
+            y = torch.cat((out_box, out_cls), dim=-1)
         return y
 
 class DarkCapsuleNet(nn.Module):
