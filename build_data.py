@@ -108,11 +108,14 @@ def gtsdb(params, root=config.GTSDB):
     Y_te = Y[split:2*split]
     X_tr = X[2*split:]
     Y_tr = Y[2*split:]
+    X_small = X[0:2]
+    Y_small = Y[0:2]
 
     pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
     pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
     pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'))
-
+    pickle.dump((X_small, Y_small), open(root+'/small.p', 'wb'))
+    
     # Get names for each class
     class_names = np.loadtxt(data_dir+'/Readme.txt', skiprows=39, delimiter = '\n', dtype = str)
     for i, name in enumerate(class_names):
@@ -128,6 +131,6 @@ def gtsdb(params, root=config.GTSDB):
 
 if __name__ == "__main__":
     np.random.seed(0)
-    # gtsrb()
-    params = utils.Params('./experiments/darknet_d/params.json')
+    gtsrb()
+    params = utils.Params('./experiments/darknet_r/params.json')
     gtsdb(params)

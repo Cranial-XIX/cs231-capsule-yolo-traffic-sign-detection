@@ -53,6 +53,7 @@ def compute_iou(boxes_pred, boxes_true):
 def dark_loss(y_pred, y_true, params):
     # y_pred (batch_size, num_grid, num_grid, 5 * B + C)
     # y_true (batch_size, num_grid, num_grid, 5 + C)
+    y_true = y_true.float()
     l_coord, l_noobj, B, C = params.l_coord, params.l_noobj, params.num_boxes, params.num_classes
     batch_size, num_grid, _, _ = y_true.shape
 
@@ -60,7 +61,6 @@ def dark_loss(y_pred, y_true, params):
     y_pred_boxes = y_pred[:, :, :, 0:5*B]
     y_pred_classes = y_pred[:, :, :, 5*B:]
     y_true_boxes = y_true[:, :, :, 0:5]
-    y_true_classes = y_true[:, :, :, 5:]
 
     # add one dimension to seperate B bounding boxes of y_pred
     y_pred_boxes = y_pred_boxes.unsqueeze(-1).view(batch_size, num_grid, num_grid, B, 5) 
@@ -114,6 +114,7 @@ def dark_loss(y_pred, y_true, params):
         obj_loss_wh = torch.sum((torch.sqrt(target_pred_wh) - torch.sqrt(target_true_wh))**2)
 
         if C != 0:
+            y_true_classes = y_true[:, :, :, 5:]
             obj_true_classes = y_true_classes[obj_mask]
             obj_pred_classes = y_pred_classes[obj_mask]
             obj_loss_class = torch.sum((obj_true_classes - obj_pred_classes)**2)

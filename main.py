@@ -15,7 +15,7 @@ from tqdm import trange
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='cnn', help=' | '.join(config.model_names))
-parser.add_argument('--mode', default='train', help='train | predict')
+parser.add_argument('--mode', default='train', help='train | predict | overfit')
 parser.add_argument('--summary', default=True, help='if summarize model', action='store_true')
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
@@ -26,7 +26,7 @@ def train(x, y, model, optimizer, loss_fn, params):
 
     x, y = utils.shuffle(x, y)
     total = len(y)
-    n_batch = total // params.batch_size
+    n_batch = (total + params.batch_size - 1) // params.batch_size
     x_split, y_split = np.array_split(x, n_batch), np.array_split(y, n_batch)
     t = trange(n_batch)
     avg_loss = 0
@@ -55,8 +55,9 @@ def evaluate(x, y, model, loss_fn, params):
     model.eval()
 
     total = len(y)
-    n_batch = total // params.batch_size
+    n_batch = (total + params.batch_size - 1) // params.batch_size
     x_split, y_split = np.array_split(x, n_batch), np.array_split(y, n_batch)
+
     avg_loss = 0
 
     with torch.no_grad():
@@ -67,7 +68,7 @@ def evaluate(x, y, model, loss_fn, params):
 
             y_hat_bch = model(x_bch)
             loss = loss_fn(y_hat_bch, y_bch, params)
-            avg_loss += loss.item() / num_steps
+            avg_loss += loss / n_batch
 
     return avg_loss
 
@@ -84,13 +85,13 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
     x_tr, y_tr, x_ev, y_ev = utils.load_data(train_data_path, eval_data_path)
 
     for epoch in range(params.n_epochs):
-        loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params).item()
-        loss_ev = evaluate(x_ev, y_ev, model, loss_fn, params).item()
+        loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params)
+        loss_ev = evaluate(x_ev, y_ev, model, loss_fn, params)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
 
-        is_best = loss_ev < best_ev_loss
+        is_best = loss_ev < best_loss_ev
 
         utils.save_checkpoint(
             {
@@ -157,3 +158,6 @@ if __name__ == '__main__':
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir+'/train.p', data_dir+'/eval.p', model_dir)
+    if args.mode == 'overfit':
+                train_and_evaluate(model, optimizer, loss_fn, params,
+            data_dir+'/small.p', data_dir+'/small.p', model_dir)
