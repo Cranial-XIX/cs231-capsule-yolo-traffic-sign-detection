@@ -117,7 +117,7 @@ def gtsdb(params, root=config.GTSDB):
     class_names = np.loadtxt(data_dir+'/Readme.txt', skiprows=39, delimiter = '\n', dtype = str)
     for i, name in enumerate(class_names):
         class_names[i] = name.split('=')[1]
-    np.savetxt(root+'class_names.txt', class_names, delimiter='\n', fmt='%s')
+    np.savetxt(root+'/class_names.txt', class_names, delimiter='\n', fmt='%s')
 
     print('Build dataset done.')
     print('Train shape:', X_tr.shape, Y_tr.shape)
