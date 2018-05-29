@@ -3,7 +3,8 @@ import torch.nn.functional as F
 import utils
 
 def cnn_loss(scores, y, params):
-    return (-F.log_softmax(scores, dim=1).gather(1, y.unsqueeze(1))).sum()
+    return (-F.log_softmax(scores, dim=1).gather(
+        1, y.unsqueeze(1))).sum() / y.size(0)
 
 
 def capsule_loss(scores, y, params):

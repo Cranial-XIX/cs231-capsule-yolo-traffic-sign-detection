@@ -62,7 +62,7 @@ def load_checkpoint(checkpoint, model, params, optimizer=None):
 # Loss related utils
 # =============================================================================
 def sine_and_cosine(x):
-    return np.sin(x), np.cos(x)
+    return torch.sin(x), torch.cos(x)
 
 
 def polar_transform(x):

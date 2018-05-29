@@ -107,9 +107,9 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
         if is_best:
             best_loss_ev = loss_ev
 
-        print("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
-            " best eval loss: {:05.3f}".format(
-                epoch+1, loss_tr, loss_ev, best_loss_ev))
+        #print("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
+        #    " best eval loss: {:05.3f}".format(
+        #        epoch+1, loss_tr, loss_ev, best_loss_ev))
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)
@@ -150,8 +150,8 @@ if __name__ == '__main__':
     }
 
     model, loss_fn = model_and_loss[args.model]
-    model = model(params)
-    
+    model = model(params).to(device=params.device)
+
     if args.summary:
         summary(model, config.input_shape[args.model])
 
