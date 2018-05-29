@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import utils
 
 def cnn_loss(scores, y, params):
     return (-F.log_softmax(scores, dim=1).gather(1, y.unsqueeze(1))).sum()
@@ -131,5 +132,33 @@ def dark_loss(y_pred, y_true, params):
 
     return loss
 
-def darkcapsule_loss():
-    pass
+
+def darkcapsule_loss(caps, y, params):
+    y = y.float()
+    y_r, y_phi = utils.polar_transform(y[:,:,:,:5]) # (:,7,7) (:,7,7,5)
+    y_cls = y[:,:,:,5:] # (:,7,7,43)
+    cap_phi, cap_cls = caps[:,:,:,:5], caps[:,:,:,5:] # (:,7,7,5), (:,7,7,43)
+
+    cap_r = (caps ** 2).sum(dim=-1) ** 0.5 # (:,7,7)
+    left = F.relu(0.9 - cap_r) ** 2        # (:,7,7)
+    right = F.relu(cap_r - 0.1) ** 2       # (:,7,7)
+
+    obj_loss = params.l_coord * y_r * left + \
+        params.l_noobj * (1 - y_r) * right
+
+    coord_loss = -cap_phi * y_phi
+    class_loss = (cap_cls - y_cls) ** 2
+    return (obj_loss.sum() + coord_loss.sum() + class_loss.sum()) / y.size(0)
+
+
+def darkcapsule2_loss(caps, y, params):
+    y = y.float()
+    r_box, phi_box = utils.polar_transform(y[:,:,:,:5]) # (:,7,7) (:,7,7,5)
+    y_cls = y[:,:,:,5:] # (:,7,7,43)
+    r = (caps ** 2).sum(dim=-1) ** 0.5 # (:,7,7,43)
+    left = F.relu(r_box.unsqueeze(3)*0.9 - r) ** 2
+    right = F.relu(r - 0.1) ** 2
+    margin_loss = params.l_coord * y_cls * left + \
+        params.l_noobj * (1. - y_cls) * right
+    direction_loss = (caps / r.unsqueeze(4)) * phi_box.unsqueeze(3)
+    return (margin_loss.sum() + direction_loss.sum()) / y.size(0)

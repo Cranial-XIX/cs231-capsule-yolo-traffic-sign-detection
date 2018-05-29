@@ -1,4 +1,5 @@
 {
+    "device": "cpu",
     "batch_size": 32,
     "n_classes": 43,
     "lr": 1e-3,

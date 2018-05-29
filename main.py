@@ -3,6 +3,7 @@ import config
 import numpy as np
 import os
 import sys
+import time
 import torch
 import utils
 
@@ -43,7 +44,7 @@ def train(x, y, model, optimizer, loss_fn, params):
         loss.backward()
         optimizer.step()
 
-        t.set_postfix(loss='{:05.3f}'.format(loss.item())) 
+        t.set_postfix(loss='{:05.3f}'.format(loss.item()))
         t.update()
 
         avg_loss += loss.item() / n_batch
@@ -106,9 +107,9 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
         if is_best:
             best_loss_ev = loss_ev
 
-        print("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
+        print("\nepoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
             " best eval loss: {:05.3f}\n".format(
-                epoch, loss_tr, loss_ev, best_loss_ev))
+                epoch+1, loss_tr, loss_ev, best_loss_ev))
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)

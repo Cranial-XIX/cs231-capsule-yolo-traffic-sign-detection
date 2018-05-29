@@ -59,7 +59,7 @@ def load_checkpoint(checkpoint, model, params, optimizer=None):
 
 
 # =============================================================================
-# Training related utils
+# Loss related utils
 # =============================================================================
 def sine_and_cosine(x):
     return np.sin(x), np.cos(x)
@@ -68,9 +68,9 @@ def sine_and_cosine(x):
 def polar_transform(x):
     assert x.shape[-1] == 5, "polar transform failed, dimension mismatched"
     sh = x.shape
-    x = x.reshape(-1, 5)
-    pc, x, y, h, w = np.hsplit(x, 5)
-    r, f1, f2, f3, f4 = pc, x*np.pi, y*np.pi, h*np.pi, w*np.pi*2
+    x = x.view(-1, 5)
+    r, x, y, h, w = torch.chunk(x, 5, 1)
+    f1, f2, f3, f4 = x*np.pi, y*np.pi, h*np.pi, w*np.pi*2
     (s1, c1), (s2, c2), (s3, c3), (s4, c4) = list(
         map(sine_and_cosine, [f1, f2, f3, f4]))
 
@@ -80,8 +80,10 @@ def polar_transform(x):
     x4 = s1 * s2 * s3 * c4
     x5 = s1 * s2 * s3 * s4
 
-    x_hat = r * np.concatenate([x1, x2, x3, x4, x5], 1)
-    return x_hat.reshape(*sh[:-1], 5)
+    x_hat = torch.cat([x1, x2, x3, x4, x5], 1)
+    return r.view(*sh[:-1]), x_hat.view(*sh[:-1], 5)
+
+
 # =============================================================================
 # Data related utils
 # =============================================================================
@@ -98,6 +100,7 @@ def center_rgb(x):
 def shuffle(x, y):
     i = np.random.permutation(len(y))
     return x[i], y[i]
+
 
 # =============================================================================
 # Bounding box related utils
