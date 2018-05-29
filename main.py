@@ -74,7 +74,7 @@ def evaluate(x, y, model, loss_fn, params):
     return avg_loss
 
 def train_and_evaluate(model, optimizer, loss_fn, params,
-    train_data_path, eval_data_path, model_dir, restore_file=None):
+    data_dir, model_dir, is_small=False, restore_file=None):
     if restore_file is not None:
         restore_path = os.path.join(model_dir, restore_file + '.pth.tar')
         print("Restoring parameters from {}".format(restore_path))
@@ -83,7 +83,8 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
     losses_tr = []
     losses_ev = []
     best_loss_ev = float('inf')
-    x_tr, y_tr, x_ev, y_ev = utils.load_data(train_data_path, eval_data_path)
+
+    x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
 
     for epoch in range(params.n_epochs):
         loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params)
@@ -159,7 +160,7 @@ if __name__ == '__main__':
     optimizer = Adam(model.parameters(), lr=args.lr)
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, params,
-            data_dir+'/train.p', data_dir+'/eval.p', model_dir)
+            data_dir, model_dir)
     if args.mode == 'overfit':
         train_and_evaluate(model, optimizer, loss_fn, params,
-            data_dir+'/small.p', data_dir+'/small.p', model_dir)
+            data_dir, model_dir, is_small=True)

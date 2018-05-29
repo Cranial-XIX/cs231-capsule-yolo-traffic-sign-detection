@@ -1,3 +1,4 @@
+import config
 import json
 import numpy as np
 import os
@@ -87,11 +88,25 @@ def polar_transform(x):
 # =============================================================================
 # Data related utils
 # =============================================================================
-def load_data(train_data_path, eval_data_path):
+def load_data(data_dir, is_small=False):
+    if is_small:
+        train_data_path = data_dir + '/' + config.tr_sm_d
+        eval_data_path = data_dir + '/' + config.ev_sm_d
+    else:
+        train_data_path = data_dir + '/' + config.tr_d
+        eval_data_path = data_dir + '/' + config.ev_d
+
     x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
     x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
     return x_tr, y_tr, x_ev, y_ev
 
+
+def make_small_data(data_dir, n=128):
+    x_tr, y_tr, x_ev, y_ev = load_data(data_dir)
+    train_data_path = data_dir + '/' + config.tr_sm_d
+    eval_data_path = data_dir + '/' + config.ev_sm_d
+    pickle.dump((x_tr[:n], y_tr[:n]), open(train_data_path, 'wb'))
+    pickle.dump((x_ev[:n], y_ev[:n]), open(eval_data_path, 'wb'))
 
 def center_rgb(x):
     return (x - 128) / 128

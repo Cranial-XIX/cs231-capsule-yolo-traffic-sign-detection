@@ -5,6 +5,15 @@ model_names = ['cnn', 'capsule', 'darknet_d', 'darknet_r', 'darkcapsule']
 GTSRB = 'data/GTSRB'
 GTSDB = 'data/GTSDB'
 
+# data name
+tr_d = '/train.p'
+ev_d = '/eval.p'
+te_d = '/test.p'
+
+tr_sm_d = '/train_small.p'
+ev_sm_d = '/eval_small.p'
+te_sm_d = '/test_small.p'
+
 # data directory
 data_dir = {
     'cnn'             : GTSRB,
