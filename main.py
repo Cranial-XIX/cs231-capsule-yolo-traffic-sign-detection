@@ -20,7 +20,7 @@ parser.add_argument('--mode', default='train', help='train | predict | overfit')
 parser.add_argument('--summary', default=True, help='if summarize model', action='store_true')
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
-
+parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 
 def train(x, y, model, optimizer, loss_fn, params):
     model.train()
@@ -133,6 +133,7 @@ if __name__ == '__main__':
 
     params.device = "cuda" if torch.cuda.is_available() else "cpu"
     params.seed = args.seed
+    params.dropout = args.dropout
 
     params.writer = SummaryWriter()
     # set random seed for reproducibility

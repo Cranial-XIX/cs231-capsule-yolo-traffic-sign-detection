@@ -78,9 +78,9 @@ class CapsuleNet(nn.Module):
 
         self.conv1 = nn.Conv2d(3, 256, 9)
         self.primary_capsules = CapsuleLayer(params,
-            n_caps=8, n_nodes=-1, in_C=256, out_C=32, kernel=8, stride=2)
+            n_caps=8, n_nodes=-1, in_C=256, out_C=16, kernel=8, stride=2)
         self.traffic_sign_capsules = CapsuleLayer(params,
-            n_caps=params.n_classes, n_nodes=32 * 9 * 9, in_C=8, out_C=16)
+            n_caps=params.n_classes, n_nodes=16 * 9 * 9, in_C=8, out_C=16)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -196,20 +196,24 @@ class DarkCapsuleNet(nn.Module):
         self.params = params
         self.conv = nn.Sequential(OrderedDict([
             ('conv_1', nn.Conv2d(3, 32, 4, 2, padding=1)),
-            ('bn_1', nn.BatchNorm2d(32, momentum=0.01)),
+            ('bn_1', nn.BatchNorm2d(32)),
             ('relu_1', nn.LeakyReLU(0.1)),
+            ('drop_1', nn.Dropout(params.dropout)),
 
             ('conv_2', nn.Conv2d(32, 64, 4, 2, padding=1)),
-            ('bn_2', nn.BatchNorm2d(64, momentum=0.01)),
+            ('bn_2', nn.BatchNorm2d(64)),
             ('relu_2', nn.LeakyReLU(0.1)),
+            ('drop_2', nn.Dropout(params.dropout)),
 
             ('conv_3', nn.Conv2d(64, 128, 4, 2, padding=1)),
-            ('bn_3', nn.BatchNorm2d(128, momentum=0.01)),
+            ('bn_3', nn.BatchNorm2d(128)),
             ('relu_3', nn.LeakyReLU(0.1)),
+            ('drop_3', nn.Dropout(params.dropout)),
 
             ('conv_4', nn.Conv2d(128, 256, 4, 2, padding=1)),
-            ('bn_4', nn.BatchNorm2d(256, momentum=0.01)),
-            ('relu_4', nn.LeakyReLU(0.1))]))
+            ('bn_4', nn.BatchNorm2d(256)),
+            ('relu_4', nn.LeakyReLU(0.1)),
+            ('drop_4', nn.Dropout(params.dropout))]))
 
         self.primary_capsules = CapsuleLayer(params,
             n_caps=8, n_nodes=-1, in_C=256, out_C=16, kernel=4, stride=2)
@@ -234,20 +238,24 @@ class DarkCapsule2Net(nn.Module):
         self.params = params
         self.conv = nn.Sequential(OrderedDict([
             ('conv_1', nn.Conv2d(3, 32, 4, 2, padding=1)),
-            ('bn_1', nn.BatchNorm2d(32, momentum=0.01)),
+            ('bn_1', nn.BatchNorm2d(32)),
             ('relu_1', nn.LeakyReLU(0.1)),
+            ('drop_1', nn.Dropout(params.dropout)),
 
             ('conv_2', nn.Conv2d(32, 64, 4, 2, padding=1)),
-            ('bn_2', nn.BatchNorm2d(64, momentum=0.01)),
+            ('bn_2', nn.BatchNorm2d(64)),
             ('relu_2', nn.LeakyReLU(0.1)),
+            ('drop_2', nn.Dropout(params.dropout)),
 
             ('conv_3', nn.Conv2d(64, 128, 4, 2, padding=1)),
-            ('bn_3', nn.BatchNorm2d(128, momentum=0.01)),
+            ('bn_3', nn.BatchNorm2d(128)),
             ('relu_3', nn.LeakyReLU(0.1)),
+            ('drop_3', nn.Dropout(params.dropout)),
 
             ('conv_4', nn.Conv2d(128, 256, 4, 2, padding=1)),
-            ('bn_4', nn.BatchNorm2d(256, momentum=0.01)),
-            ('relu_4', nn.LeakyReLU(0.1))]))
+            ('bn_4', nn.BatchNorm2d(256)),
+            ('relu_4', nn.LeakyReLU(0.1)),
+            ('drop_4', nn.Dropout(params.dropout))]))
 
         self.primary_capsules = CapsuleLayer(params,
             n_caps=8, n_nodes=-1, in_C=256, out_C=16, kernel=4, stride=2)
