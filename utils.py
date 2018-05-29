@@ -108,6 +108,7 @@ def make_small_data(data_dir, n=128):
     pickle.dump((x_tr[:n], y_tr[:n]), open(train_data_path, 'wb'))
     pickle.dump((x_ev[:n], y_ev[:n]), open(eval_data_path, 'wb'))
 
+
 def center_rgb(x):
     return (x - 128) / 128
 

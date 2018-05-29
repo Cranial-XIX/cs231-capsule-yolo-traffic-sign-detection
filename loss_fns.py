@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 import utils
@@ -136,16 +137,16 @@ def dark_loss(y_pred, y_true, params):
 
 def darkcapsule_loss(caps, y, params):
     y = y.float()
-    y_r, y_phi = utils.polar_transform(y[:,:,:,:5]) # (:,7,7) (:,7,7,5)
-    y_cls = y[:,:,:,5:] # (:,7,7,43)
-    cap_phi, cap_cls = caps[:,:,:,:5], caps[:,:,:,5:] # (:,7,7,5), (:,7,7,43)
+    caps = caps * np.sqrt(2)
+    y_r, y_phi = utils.polar_transform(y[:,:,:,:5])     # (:,7,7) (:,7,7,5)
+    y_cls = y[:,:,:,5:]                                 # (:,7,7,43)
+    cap_phi, cap_cls = caps[:,:,:,:5], caps[:,:,:,5:]   # (:,7,7,5), (:,7,7,43)
 
-    cap_r = (caps ** 2).sum(dim=-1) ** 0.5 # (:,7,7)
-    left = F.relu(0.9 - cap_r) ** 2        # (:,7,7)
-    right = F.relu(cap_r - 0.1) ** 2       # (:,7,7)
+    cap_r = (caps ** 2).sum(dim=-1) ** 0.5              # (:,7,7)
+    left = F.relu(0.9 - cap_r) ** 2                     # (:,7,7)
+    right = F.relu(cap_r - 0.1) ** 2                    # (:,7,7)
 
-    obj_loss = params.l_coord * y_r * left + \
-        params.l_noobj * (1 - y_r) * right
+    obj_loss = y_r * left + 0.5 * (1 - y_r) * right
 
     coord_loss = -cap_phi * y_phi
     class_loss = (cap_cls - y_cls) ** 2
