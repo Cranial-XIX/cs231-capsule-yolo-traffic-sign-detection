@@ -227,11 +227,11 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
     
     Return:
         - image_indices: the index of image for each box 
-          of shape (num_boxes, 1)
+          of shape (num_boxes,)
         - xy: the cooridnates (x1, y1, x2, y2) of boxes,
           of shape (num_boxes, 4)
         - classes: the class index of boxes,
-          of shape (num_boxes, 1)
+          of shape (num_boxes,) or None
     """
     batch_size, n_grid, _, D = y.shape
     B = int((D - n_classes) / 5)
