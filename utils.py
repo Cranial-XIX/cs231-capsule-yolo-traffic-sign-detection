@@ -180,8 +180,13 @@ def normalize_box_cwh(image_hw, n_grid, box_cwh):
     return normalized_cwh, positon
 
 def denorm_boxes_cwh_vec(image_hw, num_grid, norm_boxes_cwh, boxes_position):
-    # norm_boxes_cwh: shape (num_boxes, 4)  (xc, yc, w, h) 
-    # boxes_position: shape (num_boxes, 2)  (row, col) 
+    """ denormalize bounding box (vectorized version)
+    Args:
+        norm_boxes_cwh: shape (num_boxes, 4). Each row contains xc, yc, w, h
+        boxes_position: shape (num_boxes, 2). Each row contains #row, #col 
+    Return:
+        cwh:shape (num_boxes, 4).
+    """ 
     image_wh = image_hw[[1, 0]]
     grid_wh = 1. * image_wh / num_grid
     scale = np.concatenate((grid_wh, image_wh), axis=0)
@@ -190,8 +195,13 @@ def denorm_boxes_cwh_vec(image_hw, num_grid, norm_boxes_cwh, boxes_position):
     return cwh
 
 def cwh_to_xy_vec(boxes_cwh):
-    # boxes_cwh: shape (num_boxes, 4) (xc, yc, w, h)
-    # return boxes_xy: (num_boxes, 4) (x1, y1, x2, y2)
+    """ Convert center, width, height of a box to upper left and lower 
+        right coordinates (vectorized version). 
+    Args:
+        boxes_cwh: shape (num_boxes, 4). Each row contains xc, yc, w, h.
+    Return:
+        boxes_xy: (num_boxes, 4). Each row contains x1, y1, x2, y2.
+    """
     boxes_xy = np.zeros_like(boxes_cwh)
     boxes_xy[:, 0] = boxes_cwh[:, 0] - boxes_cwh[:, 2] / 2
     boxes_xy[:, 1] = boxes_cwh[:, 1] - boxes_cwh[:, 3] / 2
@@ -199,16 +209,24 @@ def cwh_to_xy_vec(boxes_cwh):
     boxes_xy[:, 3] = boxes_cwh[:, 1] + boxes_cwh[:, 3] / 2
     return boxes_xy
 
-def y_to_boxes_vec(y, image_hw, num_classes):
-    # y: shape (batch_size, num_grid, num_grid, 5 * B + C)
+def y_to_boxes_vec(y, image_hw, num_classes, conf_th = 0.5):
+    """ Convert output of network to boxes (vectorized version).
+    Args:
+        y: output of network. Shape (batch_size, num_grid, num_grid, 5 * B + C)
+        conf_th: confidence threshold for containing object or not
+    Return:
+        boxes_index: (num_boxes, 4). Each row contains the position (#batch, #row, #col) of one box.
+        boxes_xy: (num_boxes, 4). Each row contains the cooridnate (x1, y1, x2, y2) of one box.
+        boxes_classes: (num_boxes, 1). Each row contains the class index of one box.
+    """
     batch_size, num_grid, _, D = y.shape
     B = int((D - num_classes) / 5)
 
     y_boxes = y[:, :, :, 0:5*B]
     y_boxes = y_boxes.reshape(batch_size, num_grid, num_grid, B, 5)
 
-    boxes_index = np.argwhere(y_boxes[:, :, :, :, 0] > 0.5) #(num_boxes, 4)
-    mask = y_boxes[:, :, :, :, 0] > 0.5
+    boxes_index = np.argwhere(y_boxes[:, :, :, :, 0] > conf_th) #(num_boxes, 4)
+    mask = y_boxes[:, :, :, :, 0] > conf_th
 
     boxes_cwh = y_boxes[mask, 1:5]
     boxes_positon = boxes_index[:, 1:3]
