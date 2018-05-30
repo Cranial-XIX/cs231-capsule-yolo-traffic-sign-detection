@@ -110,7 +110,7 @@ def dark_loss(y_pred, y_true, params):
 
         # The loss for boxes responsible for prediction
         target_pred_pc = obj_pred_pc[target_mask]
-        obj_loss_pc = torch.sum((target_pred_pc - 1)**2)
+        obj_loss_pc = torch.sum((target_pred_pc - max_iou)**2)
 
         target_pred_xy = obj_pred_xywh[target_mask][:,0:2]  #(n_objects, 2)
         target_true_xy = obj_true_xywh[:,0,0:2]
