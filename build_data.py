@@ -75,7 +75,7 @@ def gtsdb(params, root=config.GTSDB):
         X.append(resized_image)
 
         # Load bounding boxes
-        y = np.zeros((params.num_grid, params.num_grid, 5 + params.num_classes))
+        y = np.zeros((params.n_grid, params.n_grid, 5 + params.n_classes))
         orig_hw = image.shape[0:2]
         resized_hw = resized_image.shape[0:2]
         indices = np.argwhere(image_names == name).reshape(-1,)
@@ -84,7 +84,7 @@ def gtsdb(params, root=config.GTSDB):
             box_xy = box_coords[index]
             resized_box_xy = utils.resize_box_xy(orig_hw, resized_hw, box_xy)
             box_cwh = utils.xy_to_cwh(resized_box_xy)
-            (xc, yc, w, h), (row, col) = utils.normalize_box_cwh(resized_hw, params.num_grid, box_cwh)
+            (xc, yc, w, h), (row, col) = utils.normalize_box_cwh(resized_hw, params.n_grid, box_cwh)
             
             # skip if the grid cell has object
             if y[row, col, 0] == 1:
@@ -92,7 +92,7 @@ def gtsdb(params, root=config.GTSDB):
                 continue
 
             y[row, col, 0:5] = [1, xc, yc, w, h]
-            if params.num_classes != 0:
+            if params.n_classes != 0:
                 c = classes[index]
                 y[row, col, 5 + c] = 1
 
@@ -131,6 +131,6 @@ def gtsdb(params, root=config.GTSDB):
 
 if __name__ == "__main__":
     np.random.seed(0)
-    gtsrb()
+    # gtsrb()
     params = utils.Params('./experiments/darknet_r/params.json')
     gtsdb(params)
