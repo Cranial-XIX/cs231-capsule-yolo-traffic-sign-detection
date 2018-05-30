@@ -179,16 +179,47 @@ def normalize_box_cwh(image_hw, n_grid, box_cwh):
     positon = [row, col]
     return normalized_cwh, positon
 
-def denormalize_box_cwh(image_hw, n_grid, norm_box_cwh, grid):
-    image_h, image_w = image_hw 
-    normalized_xc, normalized_yc, normalized_w, normalized_h = norm_box_cwh
-    row, col = grid
-
-    box_w = normalized_w * image_w
-    box_h = normalized_h * image_h
-    grid_w = 1. * image_w / n_grid
-    grid_h = 1. * image_h / n_grid
-    xc = normalized_xc * grid_w + col * grid_w
-    yc = normalized_yc * grid_h + row * grid_h
-    cwh = [xc, yc, box_w, box_h]
+def denorm_boxes_cwh_vec(image_hw, num_grid, norm_boxes_cwh, boxes_position):
+    # norm_boxes_cwh: shape (num_boxes, 4)  (xc, yc, w, h) 
+    # boxes_position: shape (num_boxes, 2)  (row, col) 
+    image_wh = image_hw[[1, 0]]
+    grid_wh = 1. * image_wh / num_grid
+    scale = np.concatenate((grid_wh, image_wh), axis=0)
+    cwh = norm_boxes_cwh * scale
+    cwh[:, 0:2] += boxes_position[:, [1, 0]] * grid_wh
     return cwh
+
+def cwh_to_xy_vec(boxes_cwh):
+    # boxes_cwh: shape (num_boxes, 4) (xc, yc, w, h)
+    # return boxes_xy: (num_boxes, 4) (x1, y1, x2, y2)
+    boxes_xy = np.zeros_like(boxes_cwh)
+    boxes_xy[:, 0] = boxes_cwh[:, 0] - boxes_cwh[:, 2] / 2
+    boxes_xy[:, 1] = boxes_cwh[:, 1] - boxes_cwh[:, 3] / 2
+    boxes_xy[:, 2] = boxes_cwh[:, 0] + boxes_cwh[:, 2] / 2
+    boxes_xy[:, 3] = boxes_cwh[:, 1] + boxes_cwh[:, 3] / 2
+    return boxes_xy
+
+def y_to_boxes_vec(y, image_hw, num_classes):
+    # y: shape (batch_size, num_grid, num_grid, 5 * B + C)
+    batch_size, num_grid, _, D = y.shape
+    B = int((D - num_classes) / 5)
+
+    y_boxes = y[:, :, :, 0:5*B]
+    y_boxes = y_boxes.reshape(batch_size, num_grid, num_grid, B, 5)
+
+    boxes_index = np.argwhere(y_boxes[:, :, :, :, 0] > 0.5) #(num_boxes, 4)
+    mask = y_boxes[:, :, :, :, 0] > 0.5
+
+    boxes_cwh = y_boxes[mask, 1:5]
+    boxes_positon = boxes_index[:, 1:3]
+    boxes_cwh = denorm_boxes_cwh_vec(image_hw, num_grid, boxes_cwh, boxes_positon)
+    boxes_xy = cwh_to_xy_vec(boxes_cwh)
+    if num_classes != 0:
+        y_class = y[:, :, :, 5*B:]
+        boxes_classes_onehot = y_class[boxes_index[:, 0], boxes_index[:, 1], boxes_index[:, 2]]
+        boxes_classes = np.argmax(boxes_classes_onehot, axis = 1)
+    else:
+        boxes_classes = None
+    return boxes_index, boxes_xy, boxes_classes
+
+
