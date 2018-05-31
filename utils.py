@@ -183,7 +183,7 @@ def denorm_boxes_cwh_vec(image_hw, n_grid, norm_cwh, grid_indices):
     """ denormalize bounding box (vectorized version)
     
     Args:
-        - image_hw: height and width of images, of shape (2,)
+        - image_hw: height and width of images for each box, of shape (num_boxes, 2)
         - n_grid: number of grid
         - norm_cwh: normalized xc, yc, w, h of boxes, of shape (num_boxes, 4)
         - grid_indices: #row, #col of boxes in grids, of shape (num_boxes, 2)
@@ -191,11 +191,11 @@ def denorm_boxes_cwh_vec(image_hw, n_grid, norm_cwh, grid_indices):
     Return:
         - cwh: denormalized xc, yc, w, h of boxes, of shape (num_boxes, 4).
     """ 
-    image_wh = image_hw[[1, 0]]
-    grid_wh = 1. * image_wh / n_grid
-    scale = np.concatenate((grid_wh, image_wh), axis=0)
+    image_wh = image_hw[:, [1, 0]]
+    grids_wh = 1. * image_wh / n_grid
+    scale = np.concatenate((grids_wh, image_wh), axis=1)
     cwh = norm_cwh * scale
-    cwh[:, 0:2] += grid_indices[:, [1, 0]] * grid_wh
+    cwh[:, 0:2] += grid_indices[:, [1, 0]] * grids_wh
     return cwh
 
 def cwh_to_xy_vec(cwh):
@@ -215,6 +215,23 @@ def cwh_to_xy_vec(cwh):
     xy[:, 3] = cwh[:, 1] + cwh[:, 3] / 2
     return xy
 
+def cwh_to_xy_torch(cwh):
+    """ Convert center, width, height of a box to upper left and lower 
+        right coordinates (torch version). 
+    
+    Args:
+        cwh: xc, yc, w, h of boxes. of shape  (n_objects, B, 4)
+    
+    Return:
+        xy: x1, y1, x2, y2 of boxes. of shape (n_objects, B, 4)
+    """
+    xy = torch.zeros_like(cwh)
+    xy[:, :, 0] = cwh[:, :, 0] - cwh[:, :, 2] / 2
+    xy[:, :, 1] = cwh[:, :, 1] - cwh[:, :, 3] / 2
+    xy[:, :, 2] = cwh[:, :, 0] + cwh[:, :, 2] / 2
+    xy[:, :, 3] = cwh[:, :, 1] + cwh[:, :, 3] / 2
+    return xy
+
 def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
     """ Convert output of network to boxes (vectorized version).
     
@@ -222,7 +239,7 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
         - y: output of network. 
           shape (batch_size, n_grid, n_grid, 5 * B + C)
         - conf_th: confidence threshold for containing object or not
-        - image_hw: height and width of images. of shape (2,)
+        - image_hw: height and width of images. of shape (batch_size, 2)
         - n_classes: number of classes
     
     Return:
@@ -238,14 +255,12 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
 
     y_boxes = y[:, :, :, 0:5*B]
     y_boxes = y_boxes.reshape(batch_size, n_grid, n_grid, B, 5)
-
     indices = np.argwhere(y_boxes[:, :, :, :, 0] > conf_th) #(num_boxes, 4)
     mask = y_boxes[:, :, :, :, 0] > conf_th
-
     cwh = y_boxes[mask, 1:5]
     image_indices = indices[:, 0]
     grid_indices = indices[:, 1:3]
-
+    image_hw = image_hw[image_indices]
     cwh = denorm_boxes_cwh_vec(image_hw, n_grid, cwh, grid_indices)
     xy = cwh_to_xy_vec(cwh)
 

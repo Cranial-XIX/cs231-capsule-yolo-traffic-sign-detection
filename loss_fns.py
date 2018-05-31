@@ -16,40 +16,37 @@ def capsule_loss(scores, y, params):
     margin_loss = labels * left + 0.5 * (1. - labels) * right
     return margin_loss.sum() / y.size(0)
 
-def compute_iou(boxes_pred, boxes_true):
-    '''
-    Compute intersection over union of two set of boxes
+def compute_iou_cwh(boxes_pred, boxes_true):
+    """ Compute intersection over union of two set of boxes
     Args:
       boxes_pred: shape (n_objects, B, 4)
       boxes_true: shape (n_objects, 1, 4)
+    
     Return:
       iou: shape (n_objects, B)
-    '''
+    """
 
     n_objects = boxes_pred.size(0)
     B = boxes_pred.size(1)
 
     lt = torch.max(
-        boxes_pred[:,:,:2],                           # [:, B, 2]
-        boxes_true[:,:,:2].expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
+        boxes_pred[:,:,:2] - boxes_pred[:,:,2:4] / 2,                           # [:, B, 2]
+        (boxes_true[:,:,:2] - boxes_true[:,:,2:4] / 2).expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
 
     rb = torch.min(
-        boxes_pred[:,:,2:],                           # [:, B, 2]
-        boxes_true[:,:,2:].expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
+        boxes_pred[:,:,:2] + boxes_pred[:,:,2:4] / 2,                           # [:, B, 2]
+        (boxes_true[:,:,:2] + boxes_true[:,:,2:4] / 2).expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
 
     wh = rb - lt # width and height => [:, B, 2]
     wh[wh<0] = 0 # if no intersection, set to zero
     inter = wh[:,:,0] * wh[:,:,1] # [n_objects, B]
 
     # [:, B, 1] * [:, B, 1] -> [:, B]
-    area1 = (boxes_pred[:,:,2]-boxes_pred[:,:,0]) * \
-        (boxes_pred[:,:,2]-boxes_pred[:,:,0]) 
+    area1 = boxes_pred[:,:,2] * boxes_pred[:,:,3]
     # [:, 1, 1] * [:, 1, 1] -> [:, 1] -> [:, B]
-    area2 = ((boxes_true[:,:,2]-boxes_true[:,:,0]) * \
-        (boxes_true[:,:,2]-boxes_true[:,:,0])).expand(n_objects, B)
+    area2 = (boxes_true[:,:,2] * boxes_true[:,:,3]).expand(n_objects, B)
 
     iou = inter / (area1 + area2 - inter) # [:, B]
-    
     return iou
 
 def dark_loss(y_pred, y_true, params):
@@ -88,13 +85,13 @@ def dark_loss(y_pred, y_true, params):
     # Compute loss for boxes in grid cells containing object
     if len(y_pred_boxes[obj_mask]) != 0:
         # boxes coords (xc, yc, w, h) in grid cells with object
-        obj_true_xywh = y_true_boxes[obj_mask][:,:,1:5]  #(n_objects, 1, 4)
-        obj_pred_xywh = y_pred_boxes[obj_mask][:,:,1:5]  #(n_objects, B, 4)
+        obj_true_cwh = y_true_boxes[obj_mask][:,:,1:5]  #(n_objects, 1, 4)
+        obj_pred_cwh = y_pred_boxes[obj_mask][:,:,1:5]  #(n_objects, B, 4)
         obj_pred_pc = y_pred_boxes[obj_mask][:,:,0]  #(n_objects, B)
-        n_objects = obj_true_xywh.shape[0]
+        n_objects = obj_true_cwh.shape[0]
 
-        # Compute iou between true boxes and B predicted boxes  
-        iou = compute_iou(obj_pred_xywh, obj_true_xywh)  #(n_objects, B)
+        # Compute iou between true boxes and B predicted boxes 
+        iou = compute_iou_cwh(obj_pred_cwh, obj_true_cwh) #(n_objects, B)
 
         # Find the target boxes responsible for prediction (boxes with max iou)
         max_iou, max_iou_indices = torch.max(iou, dim=1)
@@ -112,12 +109,12 @@ def dark_loss(y_pred, y_true, params):
         target_pred_pc = obj_pred_pc[target_mask]
         obj_loss_pc = torch.sum((target_pred_pc - max_iou)**2)
 
-        target_pred_xy = obj_pred_xywh[target_mask][:,0:2]  #(n_objects, 2)
-        target_true_xy = obj_true_xywh[:,0,0:2]
+        target_pred_xy = obj_pred_cwh[target_mask][:,0:2]  #(n_objects, 2)
+        target_true_xy = obj_true_cwh[:,0,0:2]
         obj_loss_xy = torch.sum((target_pred_xy - target_true_xy)**2)
 
-        target_pred_wh = obj_pred_xywh[target_mask][:,2:4]
-        target_true_wh = obj_true_xywh[:,0,2:4]
+        target_pred_wh = obj_pred_cwh[target_mask][:,2:4]
+        target_true_wh = obj_true_cwh[:,0,2:4]
         obj_loss_wh = torch.sum((torch.sqrt(target_pred_wh) - torch.sqrt(target_true_wh))**2)
 
         if C != 0:
@@ -131,7 +128,6 @@ def dark_loss(y_pred, y_true, params):
         obj_loss_pc + \
         l_noobj * noobj_loss_pc + \
         obj_loss_class) / batch_size
-
     return loss
 
 
