@@ -3,3 +3,5 @@ runs/*
 *.pyc
 test.py
 params.py
+experiments/*/*.tar
+experiments/*/*.npy
