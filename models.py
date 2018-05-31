@@ -215,16 +215,43 @@ class DarkCapsuleNet(nn.Module):
             ('relu_4', nn.LeakyReLU(0.1)),
             ('drop_4', nn.Dropout(params.dropout))]))
 
+        self.conv2 = nn.Sequential(OrderedDict([
+            ('conv_1', nn.Conv2d(3, 32, 4, 2, padding=1)),
+            ('bn_1', nn.BatchNorm2d(32)),
+            ('relu_1', nn.LeakyReLU(0.1)),
+            ('drop_1', nn.Dropout(params.dropout)),
+
+            ('conv_2', nn.Conv2d(32, 64, 4, 2, padding=1)),
+            ('bn_2', nn.BatchNorm2d(64)),
+            ('relu_2', nn.LeakyReLU(0.1)),
+            ('drop_2', nn.Dropout(params.dropout)),
+
+            ('conv_3', nn.Conv2d(64, 128, 4, 2, padding=1)),
+            ('bn_3', nn.BatchNorm2d(128)),
+            ('relu_3', nn.LeakyReLU(0.1)),
+            ('drop_3', nn.Dropout(params.dropout)),
+
+            ('conv_4', nn.Conv2d(128, 256, 4, 2, padding=1)),
+            ('bn_4', nn.BatchNorm2d(256)),
+            ('relu_4', nn.LeakyReLU(0.1)),
+            ('drop_4', nn.Dropout(params.dropout)),
+
+            ('conv_5', nn.Conv2d(256, 512, 4, 2, padding=1)),
+            ('bn_5', nn.BatchNorm2d(512)),
+            ('relu_5', nn.LeakyReLU(0.1)),
+            ('drop_5', nn.Dropout(params.dropout)),
+        ]))
+
         self.primary_capsules = CapsuleLayer(params,
-            n_caps=8, n_nodes=-1, in_C=256, out_C=16, kernel=4, stride=2)
+            n_caps=8, n_nodes=-1, in_C=512, out_C=16, kernel=1, stride=1)
 
         self.traffic_sign_capsules = CapsuleLayer(params,
             n_caps=params.n_grid**2,
-            n_nodes=16 * 6 * 6, in_C=8, out_C=5+params.n_classes)
+            n_nodes=16 * 7 * 7, in_C=8, out_C=5+params.n_classes)
 
     def forward(self, x):
         batch_size = x.size(0)
-        x = self.conv(x)
+        x = self.conv2(x)
         x = self.primary_capsules(x)
         capsules = self.traffic_sign_capsules(x).squeeze().view(
             batch_size, self.params.n_grid, self.params.n_grid, -1)
