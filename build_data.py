@@ -71,7 +71,7 @@ def gtsdb(params, root=config.GTSDB):
     for i in trange(data_size):
         name = image_files[i]
         image = cv2.imread(os.path.join(data_dir, name))
-        resized_image = cv2.resize(image, (params.image_resize, params.image_resize))
+        resized_image = cv2.resize(image, (params.darknet_input, params.darknet_input))
         X.append(resized_image)
 
         # Load bounding boxes
@@ -146,7 +146,7 @@ def gtsdb_aug(params, root = 'data', output_size=1000):
 
     # some pre-defined parameters
     add_signs = params.add_signs
-    resized_hw = [params.image_resize, params.image_resize]
+    resized_hw = [params.darknet_input, params.darknet_input]
 
     # two data loaders
     X, Y = [], []
@@ -262,7 +262,7 @@ def gtsdb_aug(params, root = 'data', output_size=1000):
                 y[row, col, 0:5] = [1, xc, yc, w, h]
                 y[row, col, 5 + single_sign[6]] = 1
 
-        resized_image = cv2.resize(image, (params.image_resize, params.image_resize))
+        resized_image = cv2.resize(image, (params.darknet_input, params.darknet_input))
         Y.append(y)
         X.append(resized_image)
 
