@@ -19,7 +19,8 @@ def dark_pred(images, y_bch, model, model_dir, restore, params):
 			                          transforms.ToTensor()])
 	x = torch.stack([transformer(image) for image in images])
 
-	print("model train mode for overfit (need change)")
+	print("!!!!!!!!!!model train mode for overfit (need change)!!!!!!!!!!!!!!!!")
+	
 	model.train()
 	x = x.to(device=params.device, dtype=torch.float32)
 	y_bch = torch.from_numpy(y_bch).to(device=params.device)
@@ -27,9 +28,19 @@ def dark_pred(images, y_bch, model, model_dir, restore, params):
 	loss = dark_loss(y_pred, y_bch, params)
 	print("loss:", loss)
 	y_pred = y_pred.data.numpy()
+	
 	image_indices, xy, classes = utils.y_to_boxes_vec(y_pred, image_hw, params.n_classes, conf_th = 0.5)
-	output_images = plot.draw_boxes_vec(images, image_indices, xy, classes)
-	for i in range(output_images.shape[0]):
-		cv2.imshow(str(i), output_images[i])
-	cv2.waitKey(0)
+	output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, xy, classes)
+
+	capsule_input = (params.capsule_input, params.capsule_input)
+
+	output_crops = np.array([cv2.resize(crop, capsule_input) for crops in crops_bch for crop in crops])
+	print(output_crops.shape)
+	
+	# for i, img in enumerate(output_images):
+	# 	cv2.imshow('image ' + str(i), img)
+	# for i, crop in enumerate(output_crops):
+	# 	cv2.imshow('crop ' + str(i), crop)
+
+	# cv2.waitKey(0)
 	return output_images
