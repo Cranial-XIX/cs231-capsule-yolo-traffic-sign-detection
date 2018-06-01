@@ -2,7 +2,7 @@ import config
 import numpy as np
 import cv2
 
-def draw_boxes(image, xy, classes = None, filename = None):
+def draw_boxes(image, xy, classes = None):
     """ Plot boxes on one image.
         
     Args:
@@ -10,15 +10,15 @@ def draw_boxes(image, xy, classes = None, filename = None):
         - xy: the cooridnates (x1, y1, x2, y2) of boxes,
           of shape (num_boxes, 4)
         - classes: the class index of boxes,
-          of shape (num_boxes, 1)
-        - save_path: directory where results are saved
+          of shape (num_boxes, 1) or None
 
     Return:
         - image with boxes and class names
     """ 
-    new_img = image.copy()
     names_file = config.GTSDB + '/class_names.txt'
     class_names = np.loadtxt(names_file, dtype = str, delimiter = '\n')
+    
+    new_img = image.copy()
     crops = [image[int(y1):int(y2), int(x1):int(x2)] for x1, y1, x2, y2 in xy]
 
     for i in range(xy.shape[0]):
@@ -31,37 +31,32 @@ def draw_boxes(image, xy, classes = None, filename = None):
             yc = (y1 + y2) // 2
             cv2.putText(new_img, class_names[c], (xc, yc), 
                 0, 0.5, (255, 0, 0))
-    
-    if filename is not None:
-        cv2.imwrite(filename, new_img)
 
     return new_img, crops
 
-def draw_boxes_vec(images, image_indices, xy, classes, save_dir = None, batch_name = ""):
+def draw_boxes_vec(images, image_indices, xy, classes = None):
     """ Plot boxes on images (for a batch of images).
     
     Args:
-        - images: of shape (batch_size, image_h, image_w, 3)
+        - images: a list of images
         - image_indices: the index of image for each box (num_boxes, )
         - xy: the cooridnates (x1, y1, x2, y2) of boxes,
           of shape (num_boxes, 4)
         - classes: the class index of boxes,
-          of shape (num_boxes, 1)
-        - save_path: directory where results are saved
+          of shape (num_boxes, 1) or None
+
+    Return:
+        - images with boxes and class names
     """
     new_images = []
     crops_bch = []
-    for i in range(images.shape[0]):
+    for i in range(len(images)):
         mask = (image_indices == i)
-        if save_dir is not None:
-            filename = save_dir + '/' + batch_name + "_" + str(i) 
-        else:
-            filename = None
             
         if classes is not None:
-            new_img, crops_img = draw_boxes(images[i], xy[mask], classes[mask], filename)
+            new_img, crops_img = draw_boxes(images[i], xy[mask], classes[mask])
         else:
-            new_img, crops_img = draw_boxes(images[i], xy[mask], None, filename)
+            new_img, crops_img = draw_boxes(images[i], xy[mask])
 
         new_images.append(new_img)
         crops_bch.append(crops_img)

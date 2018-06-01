@@ -160,14 +160,18 @@ if __name__ == '__main__':
         summary(model, config.input_shape[args.model])
 
     optimizer = Adam(model.parameters(), lr=args.lr)
+
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir, model_dir)
+        
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 1)
+        utils.make_small_data(data_dir, 5)
         train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir, model_dir, is_small=True)
 
     if args.mode == 'predict':
         x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, True)
-        dark_pred(x_tr, model, model_dir, args.restore, params, y_tr)
+        dark_pred(x_tr, model, model_dir, params, args.restore)
+
+        

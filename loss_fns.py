@@ -131,7 +131,6 @@ def dark_loss(y_pred, y_true, params):
         l_noobj * noobj_loss_pc + \
         obj_loss_class) / batch_size
 
-    print(max_iou)
     return loss
 
 
