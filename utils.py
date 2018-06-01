@@ -248,11 +248,11 @@ def cwh_to_xy_torch(cwh):
     return xy
 
 def y_to_boxes_vec(y, params, image_hw = None, conf_th = 0.5):
-    """ Convert output of network to boxes (vectorized version).
+    """Convert output of network or ground truth to boxes (vectorized version).
     
     Args:
-        - y: output of network. 
-          shape (batch_size, n_grid, n_grid, 5 * B + C)
+        - y: output of network or ground truth.
+          shape (batch_size, n_grid, n_grid, 5 * B + C), for gt B = 1.
         - conf_th: confidence threshold for containing object or not
         - image_hw: height and width of images. For metric, None. For predict,
         of shape (batch_size, 2).
