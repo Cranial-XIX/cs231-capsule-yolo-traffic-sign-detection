@@ -57,7 +57,6 @@ def load_checkpoint(checkpoint, model, params, optimizer=None):
         optimizer.load_state_dict(checkpoint['optim_dict'])
     return checkpoint
 
-
 # =============================================================================
 # Loss related utils
 # =============================================================================
@@ -197,7 +196,8 @@ def denorm_boxes_cwh_vec(image_hw, n_grid, norm_cwh, grid_indices):
     """ denormalize bounding box (vectorized version)
     
     Args:
-        - image_hw: height and width of images for each box, of shape (num_boxes, 2)
+        - image_hw: height and width of images for each box, tuple (h, w)
+          if images of same size. Shape (num_boxes, 2) if different size.
         - n_grid: number of grid
         - norm_cwh: normalized xc, yc, w, h of boxes, of shape (num_boxes, 4)
         - grid_indices: #row, #col of boxes in grids, of shape (num_boxes, 2)
@@ -205,6 +205,7 @@ def denorm_boxes_cwh_vec(image_hw, n_grid, norm_cwh, grid_indices):
     Return:
         - cwh: denormalized xc, yc, w, h of boxes, of shape (num_boxes, 4).
     """ 
+    image_hw = np.array(image_hw).reshape(-1, 2)
     image_wh = image_hw[:, [1, 0]]
     grids_wh = 1. * image_wh / n_grid
     scale = np.concatenate((grids_wh, image_wh), axis=1)
@@ -246,14 +247,15 @@ def cwh_to_xy_torch(cwh):
     xy[:, :, 3] = cwh[:, :, 1] + cwh[:, :, 3] / 2
     return xy
 
-def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
+def y_to_boxes_vec(y, params, image_hw = None, conf_th = 0.5):
     """ Convert output of network to boxes (vectorized version).
     
     Args:
         - y: output of network. 
           shape (batch_size, n_grid, n_grid, 5 * B + C)
         - conf_th: confidence threshold for containing object or not
-        - image_hw: height and width of images. of shape (batch_size, 2)
+        - image_hw: height and width of images. For metric, None. For predict,
+        of shape (batch_size, 2).
         - n_classes: number of classes
     
     Return:
@@ -265,7 +267,8 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
           of shape (num_boxes,) or None
     """
     batch_size, n_grid, _, D = y.shape
-    B = int((D - n_classes) / 5)
+    C = params.n_classes
+    B = int((D - C) / 5)
 
     y_boxes = y[:, :, :, 0:5*B]
     y_boxes = y_boxes.reshape(batch_size, n_grid, n_grid, B, 5)
@@ -274,11 +277,16 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
     cwh = y_boxes[mask, 1:5]
     image_indices = indices[:, 0]
     grid_indices = indices[:, 1:3]
-    image_hw = image_hw[image_indices]
+
+    if image_hw is None:
+        image_hw = (params.darknet_input, params.darknet_input)
+    else:
+        image_hw = image_hw[image_indices]
+
     cwh = denorm_boxes_cwh_vec(image_hw, n_grid, cwh, grid_indices)
     xy = cwh_to_xy_vec(cwh)
 
-    if n_classes != 0:
+    if C != 0:
         y_classes = y[:, :, :, 5*B:]
         classes_onehot = y_classes[indices[:, 0], indices[:, 1], indices[:, 2]]
         classes = np.argmax(classes_onehot, axis = 1)

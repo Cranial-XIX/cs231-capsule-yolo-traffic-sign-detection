@@ -6,10 +6,11 @@ import sys
 import time
 import torch
 import utils
+import cv2
 
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
-from predict_fns import dark_pred
+from predict_fns import dark_pred, class_pred, dark_class_pred
 from tensorboardX import SummaryWriter
 from torch.optim import Adam
 from torchsummary import summary
@@ -23,6 +24,7 @@ parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 parser.add_argument('--restore', default='last', help="last | best")
+parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 
 def train(x, y, model, optimizer, loss_fn, params):
     model.train()
@@ -127,10 +129,7 @@ def get_data_and_model_dir(model_name):
         sys.exit()
     return config.data_dir[model_name], config.model_dir[model_name]
 
-
-if __name__ == '__main__':
-    args = parser.parse_args()
-    data_dir, model_dir = get_data_and_model_dir(args.model)
+def load_params(model_dir, args):
     json_path = os.path.join(model_dir, 'params.json')
     params = utils.Params(json_path)
 
@@ -139,21 +138,28 @@ if __name__ == '__main__':
     params.dropout = args.dropout
 
     params.writer = SummaryWriter()
+    return params
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    data_dir, model_dir = get_data_and_model_dir(args.model)
+    params = load_params(model_dir, args)
+
     # set random seed for reproducibility
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     if params.device == "cuda":
         torch.cuda.manual_seed(args.seed)
 
-    model_and_loss = {
-        'cnn'             : (ConvNet, cnn_loss),
-        'capsule'         : (CapsuleNet, capsule_loss),
-        'darknet_d'       : (DarkNet, dark_loss),
-        'darknet_r'       : (DarkNet, dark_loss),
-        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss),
+    model_loss_predict = {
+        'cnn'             : (ConvNet, cnn_loss, class_pred),
+        'capsule'         : (CapsuleNet, capsule_loss, class_pred),
+        'darknet_d'       : (DarkNet, dark_loss,dark_pred),
+        'darknet_r'       : (DarkNet, dark_loss, dark_pred),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None),
     }
 
-    model, loss_fn = model_and_loss[args.model]
+    model, loss_fn, predict_fn = model_loss_predict[args.model]
     model = model(params).to(device=params.device)
 
     if args.summary:
@@ -172,6 +178,25 @@ if __name__ == '__main__':
 
     if args.mode == 'predict':
         x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, True)
-        dark_pred(x_tr, model, model_dir, params, args.restore)
-
         
+        if args.combine is None:
+            output = predict_fn(x_tr, model, model_dir, params, args.restore)
+        else:
+            if args.model not in ('darknet_d', 'darknet_r') or \
+            args.combine not in ('cnn', 'capsule'):
+                print("Invalid combine")
+                sys.exit()
+
+            class_model_dir = get_data_and_model_dir(args.combine)[1]
+            class_params = load_params(class_model_dir, args)
+            class_model = model_loss_predict[args.combine][0]
+            class_model = class_model(class_params) \
+                          .to(device=class_params.device)
+
+            output = dark_class_pred(x_tr, model, model_dir, params, 
+                class_model, class_model_dir, class_params, args.restore)
+
+        if args.model in ('darknet_d', 'darknet_r'):
+            for i, image in enumerate(output):
+                cv2.imshow(str(i), image)
+            cv2.waitKey(0)

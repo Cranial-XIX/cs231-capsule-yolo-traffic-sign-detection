@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch
 import config
 
-def dark_pred(images, model, model_dir, params, restore_file, is_end = True ,is_metric = False):
+def dark_pred(images, model, model_dir, params, restore_file, is_end = True, is_metric = False):
     """ Darknet prediction 
     
     Args:
@@ -50,7 +50,7 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True ,is_
         return y_pred
 
     y_pred = y_pred.data.numpy()
-    image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_pred, image_hw, params.n_classes, conf_th = 0.5)
+    image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_pred, params, image_hw = image_hw, conf_th = 0.5)
     output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
 
     if is_end:
@@ -64,7 +64,7 @@ def class_pred(x, model, model_dir, params, restore_file):
     restore_path = os.path.join(model_dir, restore_file + '.pth.tar')
     print("Restoring parameters from {}".format(restore_path))
     utils.load_checkpoint(restore_path, model, params)
-
+    
     print("!!!!!!!!!!!change model to train for overfit!!!!!!!!!!")
     model.train()
     x = torch.from_numpy(x).float().permute(0, 3, 1, 2).to(
@@ -75,8 +75,8 @@ def class_pred(x, model, model_dir, params, restore_file):
     classes = np.argmax(y_pred, axis = 1)
     return classes
 
-def dark_class_pred(images, dark_model, class_model, dark_model_dir, class_model_dir,
-    dark_params, class_params, restore_file):
+def dark_class_pred(images, dark_model, dark_model_dir, dark_params, class_model, class_model_dir,
+    class_params, restore_file):
     dark_crops, image_indices, boxes_xy = dark_pred(images, dark_model, dark_model_dir, dark_params, restore_file, is_end = False)
     classes = class_pred(dark_crops, class_model, class_model_dir, class_params, restore_file)
     output_images, _ = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
