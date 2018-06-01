@@ -116,6 +116,20 @@ def shuffle(x, y):
     i = np.random.permutation(len(y))
     return x[i], y[i]
 
+def get_image_name(i):
+    if i < 10:
+        name = '0000' + str(i) + '.ppm'
+    elif i < 100:
+        name = '000' + str(i) + '.ppm'
+    elif i < 1000:
+        name = '00' + str(i) + '.ppm'
+    elif i < 10000:
+        name = '0' + str(i) + '.ppm'
+    else:
+        name = str(i) + '.ppm'
+    assert(len(name) == 9)
+    return name
+
 
 # =============================================================================
 # Bounding box related utils

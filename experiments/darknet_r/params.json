@@ -9,5 +9,6 @@
     "n_classes": 43,
     "darknet_input": 224,
     "capsule_input": 32,
-    "n_grid": 7
+    "n_grid": 7,
+    "add_signs":3
 }

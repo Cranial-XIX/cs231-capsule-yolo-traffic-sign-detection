@@ -5,8 +5,13 @@ import numpy as np
 import pickle
 import utils
 import os
+import argparse
+import random
 
 from tqdm import trange
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--aug', default=0, help=' need data augmentation?')
 
 def gtsrb(root=config.GTSRB):
     x_tr, y_tr, x_ev, y_ev, x_te, y_te = [], [], [], [], [], []
@@ -55,7 +60,7 @@ def gtsrb(root=config.GTSRB):
     pickle.dump((x_te, y_te), open(root+'/test.p', 'wb'))
 
 
-def gtsdb(params, root=config.GTSDB):
+def gtsdb(params, aug_size=0, root=config.GTSDB):
     data_dir = root + '/raw_GTSDB'
     image_files = [f for f in os.listdir(data_dir) if f.endswith('.ppm')]
     data_size = len(image_files)
@@ -106,10 +111,20 @@ def gtsdb(params, root=config.GTSDB):
     Y_ev = Y[:split]
     X_te = X[split:2*split]
     Y_te = Y[split:2*split]
+
     X_tr = X[2*split:]
     Y_tr = Y[2*split:]
     X_small = X[0:2]
     Y_small = Y[0:2]
+
+    # data augmentation
+    if aug_size != 0:
+        print('data augmentationg begins:')
+        X_aug, Y_aug = gtsdb_aug(params, aug_size)
+        X_tr = np.concatenate((X_tr, X_aug), axis=0)
+        Y_tr = np.concatenate((Y_tr, Y_aug), axis=0)
+        print('\n')
+
 
     pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
     pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
@@ -129,7 +144,7 @@ def gtsdb(params, root=config.GTSDB):
     print('Number of boxes:', box_coords.shape[0])
     print('Conflict count:', conflict_count)
 
-def gtsdb_aug(params, root = 'data', output_size=1000):
+def gtsdb_aug(params, output_size, root = 'data'):
 
     # directory path
     data_dir = root + '/GTSDB/raw_GTSDB/'
@@ -274,23 +289,25 @@ def gtsdb_aug(params, root = 'data', output_size=1000):
     print('Y shape:')
     print(Y.shape)
 
-    # copied from gtsdb()
-    X, Y = utils.shuffle(X, Y)
-    split = X.shape[0] // 10
-    X_ev = X[:split]
-    Y_ev = Y[:split]
-    X_te = X[split:2*split]
-    Y_te = Y[split:2*split]
-    X_tr = X[2*split:]
-    Y_tr = Y[2*split:]
+    return X, Y
+    # # copied from gtsdb()
+    # X, Y = utils.shuffle(X, Y)
+    # split = X.shape[0] // 10
+    # X_ev = X[:split]
+    # Y_ev = Y[:split]
+    # X_te = X[split:2*split]
+    # Y_te = Y[split:2*split]
+    # X_tr = X[2*split:]
+    # Y_tr = Y[2*split:]
 
-    pickle.dump((X_tr, Y_tr), open(root+'/GTSDB/train.p', 'wb'))
-    pickle.dump((X_ev, Y_ev), open(root+'/GTSDB/eval.p', 'wb'))
-    pickle.dump((X_te, Y_te), open(root+'/GTSDB/test.p', 'wb'))
+    # pickle.dump((X_tr, Y_tr), open(root+'/GTSDB/train.p', 'wb'))
+    # pickle.dump((X_ev, Y_ev), open(root+'/GTSDB/eval.p', 'wb'))
+    # pickle.dump((X_te, Y_te), open(root+'/GTSDB/test.p', 'wb'))
 
 
 if __name__ == "__main__":
+    args = parser.parse_args()
     np.random.seed(0)
     gtsrb()
     params = utils.Params('./experiments/darknet_r/params.json')
-    gtsdb(params)
+    gtsdb(params, aug_size=int(args.aug))
