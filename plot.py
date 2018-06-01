@@ -2,7 +2,7 @@ import config
 import numpy as np
 import cv2
 
-def draw_boxes(image, xy, classes, filename = None):
+def draw_boxes(image, xy, classes = None, filename = None):
     """ Plot boxes on one image.
         
     Args:
@@ -52,9 +52,12 @@ def draw_boxes_vec(images, image_indices, xy, classes, save_dir = None, batch_na
             filename = save_dir + '/' + batch_name + "_" + str(i) 
         else:
             filename = None
-        new_img = draw_boxes(images[i], xy[mask], classes[mask], filename)
+            
+        if classes is not None:
+            new_img = draw_boxes(images[i], xy[mask], classes[mask], filename)
+        else:
+            new_img = draw_boxes(images[i], xy[mask], None, filename)
+
         new_images.append(new_img)
     new_images = np.array(new_images)
     return new_images
-
-

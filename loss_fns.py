@@ -95,7 +95,6 @@ def dark_loss(y_pred, y_true, params):
 
         # Find the target boxes responsible for prediction (boxes with max iou)
         max_iou, max_iou_indices = torch.max(iou, dim=1)
-        print(torch.mean(max_iou))
 
         is_target = torch.zeros(iou.shape)
         is_target[range(iou.shape[0]), max_iou_indices] = 1

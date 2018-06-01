@@ -9,6 +9,7 @@ import utils
 
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
+from predict_fns import dark_pred
 from tensorboardX import SummaryWriter
 from torch.optim import Adam
 from torchsummary import summary
@@ -21,6 +22,7 @@ parser.add_argument('--summary', default=True, help='if summarize model', action
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
+parser.add_argument('--restore', default='last', help="last | best")
 
 def train(x, y, model, optimizer, loss_fn, params):
     model.train()
@@ -68,7 +70,8 @@ def evaluate(x, y, model, loss_fn, params):
             y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
             y_hat_bch = model(x_bch)
-            loss = loss_fn(y_hat_bch, y_bch, params)
+            # loss = loss_fn(y_hat_bch, y_bch, params)
+            loss = 0
             avg_loss += loss / n_batch
 
     return avg_loss
@@ -164,3 +167,7 @@ if __name__ == '__main__':
     if args.mode == 'overfit':
         train_and_evaluate(model, optimizer, loss_fn, params,
             data_dir, model_dir, is_small=True)
+
+    if args.mode == 'predict':
+        x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, True)
+        dark_pred(x_tr, y_tr, model, model_dir, args.restore, params)
