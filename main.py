@@ -91,6 +91,7 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
 
     for epoch in range(params.n_epochs):
+        print("Epoch {}/{}".format(epoch + 1, params.n_epochs))
         loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params)
         loss_ev = evaluate(x_ev, y_ev, model, loss_fn, params)
 
