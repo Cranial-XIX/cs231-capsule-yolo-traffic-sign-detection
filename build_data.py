@@ -123,8 +123,6 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
         X_aug, Y_aug = gtsdb_aug(params, aug_size)
         X_tr = np.concatenate((X_tr, X_aug), axis=0)
         Y_tr = np.concatenate((Y_tr, Y_aug), axis=0)
-        print('\n')
-
 
     pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
     pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))

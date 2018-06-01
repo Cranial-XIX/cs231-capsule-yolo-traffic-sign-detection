@@ -16,37 +16,38 @@ def capsule_loss(scores, y, params):
     margin_loss = labels * left + 0.5 * (1. - labels) * right
     return margin_loss.sum() / y.size(0)
 
-def compute_iou_cwh(boxes_pred, boxes_true):
-    """ Compute intersection over union of two set of boxes
+def compute_iou_xy(boxes_pred, boxes_true):
+    '''
+    Compute intersection over union of two set of boxes
     Args:
-      boxes_pred: shape (n_objects, B, 4)
-      boxes_true: shape (n_objects, 1, 4)
-    
+      boxes_pred: shape (num_objects, B, 4)
+      boxes_true: shape (num_objects, 1, 4)
     Return:
-      iou: shape (n_objects, B)
-    """
+      iou: shape (num_objects, B)
+    '''
 
-    n_objects = boxes_pred.size(0)
+    num_objects = boxes_pred.size(0)
     B = boxes_pred.size(1)
 
     lt = torch.max(
-        boxes_pred[:,:,:2] - boxes_pred[:,:,2:4] / 2,                           # [:, B, 2]
-        (boxes_true[:,:,:2] - boxes_true[:,:,2:4] / 2).expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
+        boxes_pred[:,:,:2],                      # [num_objects, B, 2]
+        boxes_true[:,:,:2].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
+    )
 
     rb = torch.min(
-        boxes_pred[:,:,:2] + boxes_pred[:,:,2:4] / 2,                           # [:, B, 2]
-        (boxes_true[:,:,:2] + boxes_true[:,:,2:4] / 2).expand(n_objects, B, 2))   # [:, 1, 2] -> [:, B, 2]
+        boxes_pred[:,:,2:],                      # [num_objects, B, 2]
+        boxes_true[:,:,2:].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
+    )
 
-    wh = rb - lt # width and height => [:, B, 2]
+    wh = rb - lt # width and height => [num_objects, B, 2]
     wh[wh<0] = 0 # if no intersection, set to zero
-    inter = wh[:,:,0] * wh[:,:,1] # [n_objects, B]
+    inter = wh[:,:,0] * wh[:,:,1] # [num_objects, B]
 
-    # [:, B, 1] * [:, B, 1] -> [:, B]
-    area1 = boxes_pred[:,:,2] * boxes_pred[:,:,3]
-    # [:, 1, 1] * [:, 1, 1] -> [:, 1] -> [:, B]
-    area2 = (boxes_true[:,:,2] * boxes_true[:,:,3]).expand(n_objects, B)
+    # [num_objects, B, 1] * [num_objects, B, 1] -> [num_objects, B]
+    area1 = (boxes_pred[:,:,2]-boxes_pred[:,:,0]) * (boxes_pred[:,:,3]-boxes_pred[:,:,1]) 
+    area2 = ((boxes_true[:,:,2]-boxes_true[:,:,0]) * (boxes_true[:,:,3]-boxes_true[:,:,1])).expand(num_objects, B)
 
-    iou = inter / (area1 + area2 - inter) # [:, B]
+    iou = inter / (area1 + area2 - inter) # [num_objects, B]
     return iou
 
 def dark_loss(y_pred, y_true, params):
@@ -56,8 +57,7 @@ def dark_loss(y_pred, y_true, params):
 
     l_coord, l_noobj = params.l_coord, params.l_noobj
     B, C = params.n_boxes, params.n_classes
-
-    batch_size, n_grid, _, _ = y_true.shape
+    batch_size, n_grid, _, _ = y_true.size()
 
     # seperate boxes and classes
     y_pred_boxes = y_pred[:,:,:,:5*B]
@@ -88,16 +88,18 @@ def dark_loss(y_pred, y_true, params):
         obj_true_cwh = y_true_boxes[obj_mask][:,:,1:5]  #(n_objects, 1, 4)
         obj_pred_cwh = y_pred_boxes[obj_mask][:,:,1:5]  #(n_objects, B, 4)
         obj_pred_pc = y_pred_boxes[obj_mask][:,:,0]  #(n_objects, B)
-        n_objects = obj_true_cwh.shape[0]
+        n_objects = obj_true_cwh.size(0)
 
         # Compute iou between true boxes and B predicted boxes 
-        iou = compute_iou_cwh(obj_pred_cwh, obj_true_cwh) #(n_objects, B)
+        obj_pred_xyxy = utils.cwh_to_xy_torch(obj_pred_cwh, params.darknet_input, n_grid)
+        obj_true_xyxy = utils.cwh_to_xy_torch(obj_true_cwh, params.darknet_input, n_grid)
+        iou = compute_iou_xy(obj_pred_xyxy, obj_true_xyxy)
 
         # Find the target boxes responsible for prediction (boxes with max iou)
         max_iou, max_iou_indices = torch.max(iou, dim=1)
 
-        is_target = torch.zeros(iou.shape)
-        is_target[range(iou.shape[0]), max_iou_indices] = 1
+        is_target = torch.zeros_like(iou)
+        is_target[range(n_objects), max_iou_indices] = 1
         target_mask = (is_target == 1)
         not_target_mask = (is_target == 0)
 
@@ -107,11 +109,10 @@ def dark_loss(y_pred, y_true, params):
 
         # The loss for boxes responsible for prediction
         target_pred_pc = obj_pred_pc[target_mask]
-        obj_loss_pc = torch.sum((target_pred_pc - 1)**2)
+        obj_loss_pc = torch.sum((target_pred_pc - max_iou)**2)
 
         target_pred_xy = obj_pred_cwh[target_mask][:,0:2]  #(n_objects, 2)
         target_true_xy = obj_true_cwh[:,0,0:2]
-
         obj_loss_xy = torch.sum((target_pred_xy - target_true_xy)**2)
 
         target_pred_wh = obj_pred_cwh[target_mask][:,2:4]
@@ -129,6 +130,8 @@ def dark_loss(y_pred, y_true, params):
         obj_loss_pc + \
         l_noobj * noobj_loss_pc + \
         obj_loss_class) / batch_size
+
+    print(max_iou)
     return loss
 
 

@@ -285,3 +285,22 @@ def y_to_boxes_vec(y, image_hw, n_classes, conf_th = 0.5):
     else:
         classes = None
     return image_indices, xy, classes
+
+def cwh_to_xy_torch(cwh, img_size, n_grid):
+    """ Convert normalized center, width, height of a box to upper left and lower 
+        right coordinates (torch version). 
+    
+    Args:
+        cwh: xc, yc, w, h of boxes. of shape  (n_objects, B, 4)
+    
+    Return:
+        xy: x1, y1, x2, y2 of boxes. of shape (n_objects, B, 4)
+    """
+    grid_size = 1. * img_size / n_grid
+    xy = torch.zeros_like(cwh)
+    xy[:, :, 0] = cwh[:, :, 0] * grid_size - cwh[:, :, 2] * img_size / 2
+    xy[:, :, 1] = cwh[:, :, 1] * grid_size - cwh[:, :, 3] * img_size / 2
+    xy[:, :, 2] = cwh[:, :, 0] * grid_size + cwh[:, :, 2] * img_size / 2
+    xy[:, :, 3] = cwh[:, :, 1] * grid_size + cwh[:, :, 3] * img_size / 2
+    xy = xy.detach()
+    return xy

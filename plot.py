@@ -30,7 +30,7 @@ def draw_boxes(image, xy, classes = None, filename = None):
             xc = (x1 + x2) // 2
             yc = (y1 + y2) // 2
             cv2.putText(new_img, class_names[c], (xc, yc), 
-                cv2.FONT_HERSHEY_PLAIN, 0.5, (255, 0, 0))
+                0, 0.5, (255, 0, 0))
     
     if filename is not None:
         cv2.imwrite(filename, new_img)
