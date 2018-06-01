@@ -70,8 +70,7 @@ def evaluate(x, y, model, loss_fn, params):
             y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
             y_hat_bch = model(x_bch)
-            # loss = loss_fn(y_hat_bch, y_bch, params)
-            loss = 0
+            loss = loss_fn(y_hat_bch, y_bch, params)
             avg_loss += loss / n_batch
 
     return avg_loss

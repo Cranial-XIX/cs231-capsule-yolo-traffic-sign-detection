@@ -19,9 +19,7 @@ def dark_pred(images, model, model_dir, restore, params, y_true = None):
 			                          transforms.ToTensor()])
 	x = torch.stack([transformer(image) for image in images])
 
-	print("!!!!!!!!!!model train mode for overfit (need change)!!!!!!!!!!!!!!!!")
-	
-	model.train()
+	model.eval()
 	x = x.to(device=params.device, dtype=torch.float32)
 	y_pred = model(x)
 
