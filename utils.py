@@ -299,7 +299,8 @@ def cwh_to_xy_torch(cwh, img_size, n_grid):
         right coordinates (torch version). 
     
     Args:
-        cwh: xc, yc, w, h of boxes. of shape  (n_objects, B, 4)
+        cwh: xc, yc, w, h of boxes, of shape (n_objects, B, 4)
+        indices: #row, #col of boxes, of shape (n_objects, 2)
     
     Return:
         xy: x1, y1, x2, y2 of boxes. of shape (n_objects, B, 4)
@@ -312,3 +313,4 @@ def cwh_to_xy_torch(cwh, img_size, n_grid):
     xy[:, :, 3] = cwh[:, :, 1] * grid_size + cwh[:, :, 3] * img_size / 2
     xy = xy.detach()
     return xy
+

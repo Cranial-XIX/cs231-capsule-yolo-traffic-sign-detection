@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch
 import config
 
-def dark_pred(images, model, model_dir, params, restore_file, is_end = True, is_metric = False):
+def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.5):
     """ Darknet prediction 
     
     Args:
@@ -16,11 +16,10 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, is_
         - model_dir: directory where weights are saved.
         - restore_file: "last" or "best"
         - is_end: whether it is end to end or used in dark->cnn/capsule
-        - is_metric: whether it is used in metric
     
     Return:
         If is metric: 
-            - y_pred: of shape(n_images, n_grid, n_grid, 5B + C)
+            - y_hat: of shape(n_images, n_grid, n_grid, 5B + C)
         If is end to end:
             - output_images: images with boxes and classes, of shape (n_images, )
         If is used in dark-cnn/capsule:
@@ -40,45 +39,42 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, is_
                                       transforms.Resize(input_hw), 
                                       transforms.ToTensor()])
     x = torch.stack([transformer(image) for image in images])
-    
-    print("!!!!!!!!!!!change model to train for overfit!!!!!!!!!!")
+
     model.train()
-    x = x.to(device=params.device, dtype=torch.float32)
-    y_pred = model(x)
+    with torch.no_grad():
+        x = x.to(device=params.device, dtype=torch.float32)
+        y_hat = model(x)
 
-    if is_metric:
-        return y_pred
+    y_hat = y_hat.data.numpy()
 
-    y_pred = y_pred.data.numpy()
-    image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_pred, params, image_hw = image_hw, conf_th = 0.5)
+    image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_hat, params, image_hw = image_hw, conf_th = conf_th)
     output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
 
     if is_end:
-        return output_images
+        return y_hat, output_images
 
     capsule_input = (params.capsule_input, params.capsule_input)
     output_crops = np.array([cv2.resize(crop, capsule_input) for crops in crops_bch for crop in crops])
-    return output_crops, image_indices, boxes_xy
+    return y_hat, output_crops, image_indices, boxes_xy
 
 def class_pred(x, model, model_dir, params, restore_file):
     restore_path = os.path.join(model_dir, restore_file + '.pth.tar')
     print("Restoring parameters from {}".format(restore_path))
     utils.load_checkpoint(restore_path, model, params)
     
-    print("!!!!!!!!!!!change model to train for overfit!!!!!!!!!!")
     model.train()
-    x = torch.from_numpy(x).float().permute(0, 3, 1, 2).to(
-            device=params.device)
-    y_pred = model(x)
+    with torch.no_grad():
+        x = torch.from_numpy(x).float().permute(0, 3, 1, 2).to(
+                device=params.device)
+        y_hat = model(x)
 
-    y_pred = y_pred.data.numpy()
-    classes = np.argmax(y_pred, axis = 1)
-    return classes
+    y_hat = y_hat.data.numpy()
+    classes = np.argmax(y_hat, axis = 1)
+    return y_hat, classes
 
 def dark_class_pred(images, dark_model, dark_model_dir, dark_params, class_model, class_model_dir,
     class_params, restore_file):
-    dark_crops, image_indices, boxes_xy = dark_pred(images, dark_model, dark_model_dir, dark_params, restore_file, is_end = False)
-    classes = class_pred(dark_crops, class_model, class_model_dir, class_params, restore_file)
+    dark_y_hat, dark_crops, image_indices, boxes_xy = dark_pred(images, dark_model, dark_model_dir, dark_params, restore_file, is_end = False)
+    class_y_hat, classes = class_pred(dark_crops, class_model, class_model_dir, class_params, restore_file)
     output_images, _ = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
-    return output_images
-
+    return dark_y_hat, class_y_hat, output_images

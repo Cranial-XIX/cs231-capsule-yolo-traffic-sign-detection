@@ -8,6 +8,7 @@ import torch
 import tqdm
 import utils
 import cv2
+import pickle
 
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
@@ -181,9 +182,12 @@ if __name__ == '__main__':
 
     if args.mode == 'predict':
         x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, True)
-        
+        x = x_ev[0:10]
+        y = x_ev[0:10]
+
         if args.combine is None:
-            output = predict_fn(x_tr, model, model_dir, params, args.restore)
+            y_hat, output = predict_fn(x_tr, model, model_dir, params, args.restore)
+            pickle.dump((y, y_hat), open('./debug/{}.p'.format(args.model), 'wb'))
         else:
             if args.model not in ('darknet_d', 'darknet_r') or \
             args.combine not in ('cnn', 'capsule'):
@@ -196,10 +200,15 @@ if __name__ == '__main__':
             class_model = class_model(class_params) \
                           .to(device=class_params.device)
 
-            output = dark_class_pred(x_tr, model, model_dir, params, 
+            dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
                 class_model, class_model_dir, class_params, args.restore)
 
-        if args.model in ('darknet_d', 'darknet_r'):
-            for i, image in enumerate(output):
-                cv2.imshow(str(i), image)
-            cv2.waitKey(0)
+            pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
+        
+
+
+
+        # if args.model in ('darknet_d', 'darknet_r'):
+        #     for i, image in enumerate(output):
+        #         cv2.imshow(str(i), image)
+        #     cv2.waitKey(0)
