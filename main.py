@@ -183,10 +183,11 @@ if __name__ == '__main__':
     if args.mode == 'predict':
         x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, True)
         x = x_ev[0:10]
-        y = x_ev[0:10]
+        y = y_ev[0:10]
 
         if args.combine is None:
-            y_hat, output = predict_fn(x_tr, model, model_dir, params, args.restore)
+            y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
+            print(y_hat.shape)
             pickle.dump((y, y_hat), open('./debug/{}.p'.format(args.model), 'wb'))
         else:
             if args.model not in ('darknet_d', 'darknet_r') or \
