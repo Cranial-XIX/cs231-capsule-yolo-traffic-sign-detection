@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import torch
+import tqdm
 import utils
 import cv2
 
@@ -33,6 +34,7 @@ def train(x, y, model, optimizer, loss_fn, params):
     total = len(y)
     n_batch = (total + params.batch_size - 1) // params.batch_size
     x_split, y_split = np.array_split(x, n_batch), np.array_split(y, n_batch)
+    n = y.shape[0]
     t = trange(n_batch)
     avg_loss = 0
 
@@ -51,7 +53,7 @@ def train(x, y, model, optimizer, loss_fn, params):
         t.set_postfix(loss='{:05.3f}'.format(loss.item()))
         t.update()
 
-        avg_loss += loss.item() / n_batch
+        avg_loss += loss.item() / n
 
     return avg_loss
 
@@ -62,7 +64,7 @@ def evaluate(x, y, model, loss_fn, params):
     total = len(y)
     n_batch = (total + params.batch_size - 1) // params.batch_size
     x_split, y_split = np.array_split(x, n_batch), np.array_split(y, n_batch)
-
+    n = y.shape[0]
     avg_loss = 0
 
     with torch.no_grad():
@@ -73,7 +75,7 @@ def evaluate(x, y, model, loss_fn, params):
 
             y_hat_bch = model(x_bch)
             loss = loss_fn(y_hat_bch, y_bch, params)
-            avg_loss += loss / n_batch
+            avg_loss += loss / n
 
     return avg_loss
 
@@ -91,7 +93,6 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
 
     for epoch in range(params.n_epochs):
-        print("Epoch {}/{}".format(epoch + 1, params.n_epochs))
         loss_tr = train(x_tr, y_tr, model, optimizer, loss_fn, params)
         loss_ev = evaluate(x_ev, y_ev, model, loss_fn, params)
 
@@ -109,13 +110,13 @@ def train_and_evaluate(model, optimizer, loss_fn, params,
             is_best=is_best,
             checkpoint=model_dir)
 
-        # If best_eval, best_save_path        
+        # If best_eval, best_save_path
         if is_best:
             best_loss_ev = loss_ev
 
-        #print("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
-        #    " best eval loss: {:05.3f}".format(
-        #        epoch+1, loss_tr, loss_ev, best_loss_ev))
+        tqdm.write("epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
+            " best eval loss: {:05.3f}".format(
+                epoch+1, loss_tr, loss_ev, best_loss_ev))
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)
@@ -156,7 +157,7 @@ if __name__ == '__main__':
     model_loss_predict = {
         'cnn'             : (ConvNet, cnn_loss, class_pred),
         'capsule'         : (CapsuleNet, capsule_loss, class_pred),
-        'darknet_d'       : (DarkNet, dark_loss,dark_pred),
+        'darknet_d'       : (DarkNet, dark_loss, dark_pred),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred),
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None),
     }
