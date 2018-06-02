@@ -30,12 +30,12 @@ def compute_iou_xy(boxes_pred, boxes_true):
     B = boxes_pred.size(1)
 
     lt = torch.max(
-        boxes_pred[:,:,:2],                      # [num_objects, B, 2]
+        boxes_pred[:,:,:2],                             # [num_objects, B, 2]
         boxes_true[:,:,:2].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
     )
 
     rb = torch.min(
-        boxes_pred[:,:,2:],                      # [num_objects, B, 2]
+        boxes_pred[:,:,2:],                             # [num_objects, B, 2]
         boxes_true[:,:,2:].expand(num_objects, B, 2)    # [num_objects, 1, 2] -> (num_objects, B, 2]
     )
 

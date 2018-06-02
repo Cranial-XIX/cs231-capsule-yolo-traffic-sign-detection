@@ -145,6 +145,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_dir, model_dir = get_data_and_model_dir(args.model)
     params = load_params(model_dir, args)
+    params.model = args.model
 
     # set random seed for reproducibility
     np.random.seed(args.seed)
