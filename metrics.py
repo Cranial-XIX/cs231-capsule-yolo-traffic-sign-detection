@@ -1,4 +1,4 @@
-import colors
+import config
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -6,8 +6,7 @@ import utils
 
 from sklearn.metrics import auc, roc_auc_score, average_precision_score, roc_curve, precision_recall_curve
 
-def recog_auc(y, y_hat):
-    y, y_hat = y.numpy(), y_hat.numpy()
+def recog_auc(y, y_hat, params, show=False, save=False):
     n_classes = y.shape[1]
     fpr = dict()
     tpr = dict()
@@ -30,12 +29,15 @@ def recog_auc(y, y_hat):
     plt.ylabel('True Positive Rate')
     plt.title('Average auc score, micro-averaged over' \
         'all classes: auc={0:0.2f}'.format(roc_auc['micro']))
-    plt.show()
+    if show:
+        plt.show()
+    if save:
+        config.model_dir[params.model]+'/c_auc.png'
+
     return roc_auc['micro']
 
 
-def recog_pr(y, y_hat):
-    y, y_hat = y.numpy(), y_hat.numpy()
+def recog_pr(y, y_hat, params, show=False, save=False):
     n_classes = y.shape[1]
     precision = dict()
     recall = dict()
@@ -62,7 +64,11 @@ def recog_pr(y, y_hat):
     plt.xlim([0.0, 1.0])
     plt.title('Average precision score, micro-averaged over' \
         'all classes: AP={0:0.2f}'.format(average_precision['micro']))
-    plt.show()
+    if show:
+        plt.show()
+    if save:
+        config.model_dir[params.model]+'/c_pr.png'
+
     return average_precision['micro']
 
 
@@ -160,23 +166,21 @@ def average_precision(p, r):
     return avg_p
 
 
-def detect_AP(y, y_hat, params):
+def detect_AP(y, y_hat, params, show=False, save=False):
     iou_ths = np.linspace(0.5, 0.95, 10)
     conf_ths = np.linspace(0, 1, 100)
 
     im_indices = np.arange(y.shape[0])
-    ax = None
     avg_ps = []
+    ax = None
 
-    plt.figure(figsize=(10,8))
-    ax = plt.gca()
     for i, iou_th in enumerate(iou_ths):
         precisions = []
         recalls = []
         for conf_th in conf_ths:
-            y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th)
+            y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
             y_hat_im_idx, y_hat_bx, _ = utils.y_to_boxes_vec(
-                y_hat, params, conf_th)
+                y_hat, params, conf_th=conf_th)
             TP = FP = FN = 0
             for j in im_indices:
                 y_, y_hat_ = y_bx[y_im_idx == j], y_hat_bx[y_hat_im_idx == j]
@@ -184,39 +188,46 @@ def detect_AP(y, y_hat, params):
                 TP += tp
                 FP += fp
                 FN += fn
-            p, r = precision_and_recall(tp, fp, fn)
+            p, r = precision_and_recall(TP, FP, FN)
             precisions.append(p)
             recalls.append(r)
-        p, r = np.array(p), np.array(r)
+        if i ==0:
+            print(precisions)
+            print(recalls)
+        p, r = np.array(precisions), np.array(recalls)
         avg_p = average_precision(p, r)
+        print(avg_p)
         ax = plot_pr_curve(
             precisions, recalls, label='iou={:.2f}'.format(iou_th),
             color=config.colors[i*2], ax=ax, name=params.model)
         avg_ps.append(avg_p)
-    plt.savefig(config.model_dir[params.model]+'/d_AP.png')
+    plt.legend()
+    if show:
+        plt.show()
+    if save:
+        plt.savefig(config.model_dir[params.model]+'/d_AP.png')
     return avg_ps, iou_ths
 
 
-def detect_and_recog_mAP(y, y_hat, params):
+def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
     iou_ths = np.linspace(0.5, 0.95, 10)
     conf_ths = np.linspace(0, 1, 100)
 
     im_indices = np.arange(y.shape[0])
-
-    ax = None
     avg_ps = []
 
     for c in range(params.n_classes):
-        plt.figure(c, figsize=(10,8))
+        plt.figure(c, figsize=(10, 8))
         ax = plt.gca()
         for i, iou_th in enumerate(iou_ths):
             precisions = []
             recalls = []
             for conf_th in conf_ths:
                 y_im_idx, y_bx, y_cls = utils.y_to_boxes_vec(
-                    y, params, conf_th)
+                    y, params, conf_th=conf_th)
                 y_hat_im_idx, y_hat_bx, y_hat_cls = utils.y_to_boxes_vec(
-                    y_hat, params, conf_th)
+                    y_hat, params, conf_th=conf_th)
+
                 TP = FP = FN = 0
                 for j in im_indices:
                     y_ = y_bx[(y_im_idx == j) * (y_cls == c)]
@@ -225,23 +236,29 @@ def detect_and_recog_mAP(y, y_hat, params):
                     TP += tp
                     FP += fp
                     FN += fn
-                p, r = precision_and_recall(tp, fp, fn)
+                p, r = precision_and_recall(TP, FP, FN)
                 precisions.append(p)
                 recalls.append(r)
-            p, r = np.array(p), np.array(r)
+            p, r = np.array(precisions), np.array(recalls)
             avg_p = average_precision(p, r)
             ax = plot_pr_curve(
                 precisions, recalls, label='iou={:.2f}'.format(iou_th),
                 color=config.colors[i*2], ax=ax, name=params.model)
             avg_ps.append(avg_p)
-        plt.savefig(
-            config.model_dir[params.model]+'/d&r_mAP_class_{}.png'.format(c))
+        plt.legend()
+
+        if save:
+            plt.savefig(
+                config.model_dir[params.model]+'/d&r_mAP_class_{}.png'.format(c))
+        if show:
+            plt.show()
+
     avg_ps = np.array(avg_ps).reshape(c, -1)
     return avg_ps, iou_ths
 
 
 if __name__ == "__main__":
-    y, y_hat = torch.eye(4,4), torch.eye(4,4)
+    y, y_hat = np.eye(4), np.eye(4)
     # test for recog auc
     recog_auc(y, y_hat)
     # test for recog pr
