@@ -34,10 +34,6 @@ parser.add_argument('--fine_tune', help='if fine tune', action='store_true')
 def train(x, y, model, optimizer, loss_fn, metric, params):
     model.train()
 
-    for param_group in optimizer.param_groups:
-        print(param_group['lr'])
-        break
-
     x, y = utils.shuffle(x, y)
     total = len(y)
     n_batch = (total + params.batch_size - 1) // params.batch_size
