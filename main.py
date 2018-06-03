@@ -30,6 +30,7 @@ parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--fine_tune', help='if fine tune', action='store_true')
+parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
 
 def train(x, y, model, optimizer, loss_fn, metric, params):
     model.train()
@@ -74,7 +75,10 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
         i = np.random.choice(n, config.max_metric_samples)
         y, y_hat = y[i], y_hat[i]
 
-    metric_score = metric(y, y_hat, params)
+    if args.no_metric:
+        metric_score = 1
+    else:
+        metric_score = metric(y, y_hat, params)
 
     return avg_loss, metric_score
 
@@ -111,7 +115,11 @@ def evaluate(x, y, model, loss_fn, metric, params):
         y, y_hat = y[i], y_hat[i]
 
     y_hat = np.concatenate(y_hat, axis=0)
-    metric_score = metric(y, y_hat, params)
+    
+    if args.no_metric:
+        metric_score = 1
+    else:
+        metric_score = metric(y, y_hat, params)
 
     return avg_loss, metric_score
 
