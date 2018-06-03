@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch
 import config
 
-def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.5):
+def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.6):
     """ Darknet prediction 
     
     Args:
