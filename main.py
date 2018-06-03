@@ -27,7 +27,7 @@ parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 parser.add_argument('--restore', default='last', help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
-parser.add_argument('--recon', default=True, help='if use reconstruction loss', action='store_true')
+parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             data_dir, model_dir)
         
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 5)
+        utils.make_small_data(data_dir, 1)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, is_small=True)
