@@ -88,11 +88,11 @@ def polar_transform(x):
 # =============================================================================
 def load_data(data_dir, is_small=False):
     if is_small:
-        train_data_path = data_dir + '/' + config.tr_sm_d
-        eval_data_path = data_dir + '/' + config.ev_sm_d
+        train_data_path = data_dir + config.tr_sm_d
+        eval_data_path = data_dir + config.ev_sm_d
     else:
-        train_data_path = data_dir + '/' + config.tr_d
-        eval_data_path = data_dir + '/' + config.ev_d
+        train_data_path = data_dir + config.tr_d
+        eval_data_path = data_dir + config.ev_d
 
     x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
     x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
