@@ -14,7 +14,7 @@ from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
 from tensorboardX import SummaryWriter
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from torchsummary import summary
 from tqdm import trange, tqdm
 
@@ -29,10 +29,14 @@ parser.add_argument('--restore', default='last', help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
-
+parser.add_argument('--fine_tune', help='if fine tune', action='store_true')
 
 def train(x, y, model, optimizer, loss_fn, metric, params):
     model.train()
+
+    for param_group in optimizer.param_groups:
+        print(param_group['lr'])
+        break
 
     x, y = utils.shuffle(x, y)
     total = len(y)
@@ -56,7 +60,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
             y_hat_bch = model(x_bch)
             loss = loss_fn(y_hat_bch, y_bch, params)
 
-        y_hat.append(y_hat_bch.data.numpy())
+        y_hat.append(y_hat_bch.data.cpu().numpy())
 
         optimizer.zero_grad()
         loss.backward()
@@ -102,7 +106,7 @@ def evaluate(x, y, model, loss_fn, metric, params):
                 y_hat_bch = model(x_bch)
                 loss = loss_fn(y_hat_bch, y_bch, params)
 
-            y_hat.append(y_hat_bch.data.numpy())
+            y_hat.append(y_hat_bch.data.cpu().numpy())
             avg_loss += loss / n
 
     # shrink size for faster calculation of metric
@@ -130,8 +134,10 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=params.lr_decay)
 
     for epoch in range(params.n_epochs):
+        scheduler.step()
         loss_tr, metric_tr = train(
             x_tr, y_tr, model, optimizer, loss_fn, metric, params)
         loss_ev, metric_ev = evaluate(
@@ -224,7 +230,14 @@ if __name__ == '__main__':
     if args.summary:
         summary(model, config.input_shape[args.model])
 
-    optimizer = Adam(model.parameters(), lr=args.lr)
+    if args.fine_tune:
+        model.load_weights('./darknet19_weights.npz', 18)
+        for name, param in model.named_parameters():
+            layer_type, index = name.split('.')[1].split('_')
+            if int(index) <= params.fine_tune:
+                param.requires_grad = False
+
+    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, metric, params,
@@ -260,7 +273,7 @@ if __name__ == '__main__':
             dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
                 class_model, class_model_dir, class_params, args.restore)
 
-            pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
+            # pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
 
         if args.model in ('darknet_d', 'darknet_r'):
             for i, image in enumerate(output):

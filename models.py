@@ -220,6 +220,38 @@ class DarkNet(nn.Module):
             y = torch.cat((y_box, y_cls), dim=-1)
         return y
 
+    def load_weights(self, weights_dir, n_load_layer):
+        model_dict = self.state_dict()
+        pretr_dict = np.load(weights_dir)
+        name_dict = {
+            'kernel:0': ('conv', 'weight'),
+            'biases:0': ('bn', 'bias'),
+            'gamma:0': ('bn', 'weight'),
+            'moving_mean:0': ('bn', 'running_mean'), 
+            'moving_variance:0': ('bn', 'running_var'),
+        }
+
+        print('Load weights from ' + weights_dir)
+        load_dict = {}
+        for key, v in pretr_dict.items():
+            index, layer = key.split('-')
+            index = int(index) + 1
+
+            if index > n_load_layer:
+                continue
+
+            _, name = layer.split('/')
+            layer_type, param_type = name_dict[name]
+
+            param = torch.from_numpy(v)
+            if layer_type == 'conv' and param_type == 'weight':
+                param = param.permute(3, 2, 0, 1)
+
+            new_key = "model.{}_{}.{}".format(layer_type, index, param_type)  
+            load_dict[new_key] = param
+
+        model_dict.update(load_dict)
+        self.load_state_dict(model_dict)
 
 class DarkCapsuleNet(nn.Module):
     def __init__(self, params):
