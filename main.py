@@ -49,7 +49,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
             device=params.device)
         y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
-        if params.recon:
+        if params.model == 'capsule' and params.recon:
             y_hat_bch, recon = model(x_bch, y_bch, True)
             loss = loss_fn(y_hat_bch, y_bch, params, x_bch, recon)
         else:
@@ -95,7 +95,7 @@ def evaluate(x, y, model, loss_fn, metric, params):
                 device=params.device)
             y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
-            if params.recon:
+            if params.model == 'capsule' and params.recon:
                 y_hat_bch, recon = model(x_bch, y_bch, True)
                 loss = loss_fn(y_hat_bch, y_bch, params, x_bch, recon)
             else:
