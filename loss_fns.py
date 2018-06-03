@@ -68,7 +68,6 @@ def dark_loss(y_pred, y_true, params):
 
     # seperate boxes and classes
     y_pred_boxes = y_pred[:,:,:,:5*B]
-    y_pred_classes = y_pred[:,:,:,5*B:]
     y_true_boxes = y_true[:,:,:,:5]
 
     # add one dimension to seperate B bounding boxes of y_pred
@@ -127,6 +126,7 @@ def dark_loss(y_pred, y_true, params):
         obj_loss_wh = torch.sum((torch.sqrt(target_pred_wh) - torch.sqrt(target_true_wh))**2)
 
         if C != 0:
+            y_pred_classes = y_pred[:,:,:,5*B:]
             y_true_classes = y_true[:,:,:,5:]
             obj_true_classes = y_true_classes[obj_mask]
             obj_pred_classes = y_pred_classes[obj_mask]
