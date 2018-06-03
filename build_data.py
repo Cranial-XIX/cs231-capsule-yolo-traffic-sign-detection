@@ -114,9 +114,7 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
 
     X_tr = X[2*split:]
     Y_tr = Y[2*split:]
-    X_small = X[0:2]
-    Y_small = Y[0:2]
-
+    
     # data augmentation
     if aug_size != 0:
         print('data augmentationg begins:')
@@ -127,7 +125,6 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
     pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
     pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
     pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'))
-    pickle.dump((X_small, Y_small), open(root+'/small.p', 'wb'))
     
     # Get names for each class
     class_names = np.loadtxt(data_dir+'/Readme.txt', skiprows=39, delimiter = '\n', dtype = str)
