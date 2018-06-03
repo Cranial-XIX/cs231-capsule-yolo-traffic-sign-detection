@@ -42,6 +42,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
     y_hat = []
 
     for i, (x_bch, y_bch) in enumerate(zip(x_split, y_split)):
+        x_bch = utils.augmentation(x_bch)
         x_bch = torch.from_numpy(x_bch).float().permute(0, 3, 1, 2).to(
             device=params.device)
         y_bch = torch.from_numpy(y_bch).to(device=params.device)
