@@ -7,38 +7,45 @@ import utils
 from sklearn.metrics import auc, roc_auc_score, average_precision_score, roc_curve, precision_recall_curve
 
 def recog_auc(y, y_hat, params, show=False, save=False):
-    n_classes = y.shape[1]
+    n_classes = params.n_classes
+    y = np.eye(n_classes)[y]
+
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
     for i in range(n_classes):
         fpr[i], tpr[i], th = roc_curve(y[:, i], y_hat[:, i])
-        print(th)
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     fpr['micro'], tpr['micro'], _ = roc_curve(y.ravel(), y_hat.ravel())
     roc_auc['micro'] = auc(fpr['micro'], tpr['micro'])
-    plt.figure(1)
-    plt.step(fpr['micro'], tpr['micro'], color='darkorange', alpha=0.2, where='post')
-    plt.fill_between(fpr['micro'], tpr['micro'], step='post', alpha=0.2, color='darkorange')
 
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Average auc score, micro-averaged over' \
-        'all classes: auc={0:0.2f}'.format(roc_auc['micro']))
+    if show or save:
+        plt.figure(1)
+        plt.step(fpr['micro'], tpr['micro'], color='darkorange', alpha=0.2, where='post')
+        plt.fill_between(fpr['micro'], tpr['micro'], step='post', alpha=0.2, color='darkorange')
+
+        plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Average auc score, micro-averaged over' \
+            'all classes: auc={0:0.2f}'.format(roc_auc['micro']))
+
     if show:
         plt.show()
+
     if save:
-        config.model_dir[params.model]+'/c_auc.png'
+        config.model_dir[params.model]+'/r_auc.png'
 
     return roc_auc['micro']
 
 
 def recog_pr(y, y_hat, params, show=False, save=False):
-    n_classes = y.shape[1]
+    n_classes = params.n_classes
+    y = np.eye(n_classes)[y]
+
     precision = dict()
     recall = dict()
     average_precision = dict()
@@ -54,20 +61,23 @@ def recog_pr(y, y_hat, params, show=False, save=False):
     average_precision["micro"] = average_precision_score(
         y, y_hat, average="micro")
 
-    plt.figure(2)
-    plt.step(recall['micro'], precision['micro'], color='b', alpha=0.2, where='post')
-    plt.fill_between(recall["micro"], precision["micro"], step='post', alpha=0.2, color='b')
+    if show or save:
+        plt.figure(2)
+        plt.step(recall['micro'], precision['micro'], color='b', alpha=0.2, where='post')
+        plt.fill_between(recall["micro"], precision["micro"], step='post', alpha=0.2, color='b')
 
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.ylim([0.0, 1.05])
-    plt.xlim([0.0, 1.0])
-    plt.title('Average precision score, micro-averaged over' \
-        'all classes: AP={0:0.2f}'.format(average_precision['micro']))
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.title('Average precision score, micro-averaged over' \
+            'all classes: AP={0:0.2f}'.format(average_precision['micro']))
+
     if show:
         plt.show()
+
     if save:
-        config.model_dir[params.model]+'/c_pr.png'
+        config.model_dir[params.model]+'/r_pr.png'
 
     return average_precision['micro']
 
@@ -178,9 +188,11 @@ def detect_AP(y, y_hat, params, show=False, save=False):
         precisions = []
         recalls = []
         for conf_th in conf_ths:
-            y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
+            y_im_idx, y_bx, _ = utils.y_to_boxes_vec(
+                y, params, conf_th=conf_th)
             y_hat_im_idx, y_hat_bx, _ = utils.y_to_boxes_vec(
                 y_hat, params, conf_th=conf_th)
+
             TP = FP = FN = 0
             for j in im_indices:
                 y_, y_hat_ = y_bx[y_im_idx == j], y_hat_bx[y_hat_im_idx == j]
@@ -191,22 +203,27 @@ def detect_AP(y, y_hat, params, show=False, save=False):
             p, r = precision_and_recall(TP, FP, FN)
             precisions.append(p)
             recalls.append(r)
-        if i ==0:
-            print(precisions)
-            print(recalls)
+
         p, r = np.array(precisions), np.array(recalls)
         avg_p = average_precision(p, r)
-        print(avg_p)
-        ax = plot_pr_curve(
-            precisions, recalls, label='iou={:.2f}'.format(iou_th),
-            color=config.colors[i*2], ax=ax, name=params.model)
+
+        if show or save:
+            ax = plot_pr_curve(
+                precisions, recalls, label='iou={:.2f}'.format(iou_th),
+                color=config.colors[i*2], ax=ax, name=params.model)
+
         avg_ps.append(avg_p)
-    plt.legend()
+
     if show:
+        plt.legend()
         plt.show()
+
     if save:
+        plt.legend()
         plt.savefig(config.model_dir[params.model]+'/d_AP.png')
-    return avg_ps, iou_ths
+
+    avg_ps = np.array(avg_ps)
+    return np.mean(avg_ps)
 
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
@@ -241,25 +258,36 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
                 recalls.append(r)
             p, r = np.array(precisions), np.array(recalls)
             avg_p = average_precision(p, r)
-            ax = plot_pr_curve(
-                precisions, recalls, label='iou={:.2f}'.format(iou_th),
-                color=config.colors[i*2], ax=ax, name=params.model)
+            if show or save:
+                ax = plot_pr_curve(
+                    precisions, recalls, label='iou={:.2f}'.format(iou_th),
+                    color=config.colors[i*2], ax=ax, name=params.model)
             avg_ps.append(avg_p)
-        plt.legend()
 
         if save:
+            plt.legend()
             plt.savefig(
                 config.model_dir[params.model]+'/d&r_mAP_class_{}.png'.format(c))
+
         if show:
+            plt.legend()
             plt.show()
 
     avg_ps = np.array(avg_ps).reshape(c, -1)
-    return avg_ps, iou_ths
+    return np.mean(avg_ps)
 
 
 if __name__ == "__main__":
-    y, y_hat = np.eye(4), np.eye(4)
-    # test for recog auc
-    recog_auc(y, y_hat)
-    # test for recog pr
-   #recog_pr(y, y_hat)
+    # please see the following tests to understand how to
+    # use those metrics
+    y, y_hat = np.array([0,1,2,3]), np.eye(4)
+    # test recognition auc
+    assert recog_auc(y, y_hat) == 1.0
+    # test recognition precision-recall
+    assert recog_pr(y, y_hat) == 1.0
+    # test detection average precision (AP)
+    y, y_hat = pickle.load(open('debug/darknet_d.p', 'rb'))
+    AP = detect_AP(y, y, params, show=True)
+    # test detection and classification mean Average Precision (mAP)
+    y, y_hat = pickle.load(open('debug/darknet_d.p', 'rb'))
+    mAP = detect_and_recog_mAP(y, y, params, show=True)
