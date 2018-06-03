@@ -22,8 +22,11 @@ def recog_auc(y, y_hat, params, show=False, save=False):
 
     if show or save:
         plt.figure(1)
-        plt.step(fpr['micro'], tpr['micro'], color='darkorange', alpha=0.2, where='post')
-        plt.fill_between(fpr['micro'], tpr['micro'], step='post', alpha=0.2, color='darkorange')
+        plt.step(fpr['micro'], tpr['micro'],
+            color='darkorange', alpha=0.2, where='post')
+
+        plt.fill_between(fpr['micro'], tpr['micro'],
+            step='post', alpha=0.2, color='darkorange')
 
         plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
         plt.xlim([0.0, 1.0])
@@ -63,8 +66,11 @@ def recog_pr(y, y_hat, params, show=False, save=False):
 
     if show or save:
         plt.figure(2)
-        plt.step(recall['micro'], precision['micro'], color='b', alpha=0.2, where='post')
-        plt.fill_between(recall["micro"], precision["micro"], step='post', alpha=0.2, color='b')
+        plt.step(recall['micro'], precision['micro'],
+            color='b', alpha=0.2, where='post')
+
+        plt.fill_between(recall["micro"], precision["micro"],
+            step='post', alpha=0.2, color='b')
 
         plt.xlabel('Recall')
         plt.ylabel('Precision')
@@ -266,8 +272,8 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
 
         if save:
             plt.legend()
-            plt.savefig(
-                config.model_dir[params.model]+'/d&r_mAP_class_{}.png'.format(c))
+            plt.savefig(config.model_dir[params.model] +
+                '/d&r_mAP_class_{}.png'.format(c))
 
         if show:
             plt.legend()

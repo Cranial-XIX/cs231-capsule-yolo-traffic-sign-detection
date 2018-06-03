@@ -1,13 +1,13 @@
 import argparse
 import config
+import cv2
 import numpy as np
 import os
+import pickle
 import sys
 import time
 import torch
 import utils
-import cv2
-import pickle
 
 from metrics import recog_auc, recog_pr, detect_AP, detect_and_recog_mAP
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
@@ -252,4 +252,3 @@ if __name__ == '__main__':
             for i, image in enumerate(output):
                 cv2.imshow(str(i), image)
             cv2.waitKey(0)
-
