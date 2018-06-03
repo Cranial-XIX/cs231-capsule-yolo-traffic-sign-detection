@@ -130,14 +130,16 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=params.lr_decay)
-
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=20, gamma=params.lr_decay)
+    
     for epoch in range(params.n_epochs):
-        scheduler.step()
         loss_tr, metric_tr = train(
             x_tr, y_tr, model, optimizer, loss_fn, metric, params)
         loss_ev, metric_ev = evaluate(
             x_ev, y_ev, model, loss_fn, metric, params)
+
+        scheduler.step(loss_tr)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
