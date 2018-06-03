@@ -27,6 +27,8 @@ parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 parser.add_argument('--restore', default='last', help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
+parser.add_argument('--recon', default=True, help='if use reconstruction loss', action='store_true')
+parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 
 
 def train(x, y, model, optimizer, loss_fn, metric, params):
@@ -47,9 +49,14 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
             device=params.device)
         y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
-        y_hat_bch = model(x_bch)
+        if params.recon:
+            y_hat_bch, recon = model(x_bch, y_bch, True)
+            loss = loss_fn(y_hat_bch, y_bch, params, x_bch, recon)
+        else:
+            y_hat_bch = model(x_bch)
+            loss = loss_fn(y_hat_bch, y_bch, params)
+
         y_hat.append(y_hat_bch.data.numpy())
-        loss = loss_fn(y_hat_bch, y_bch, params)
 
         optimizer.zero_grad()
         loss.backward()
@@ -88,10 +95,14 @@ def evaluate(x, y, model, loss_fn, metric, params):
                 device=params.device)
             y_bch = torch.from_numpy(y_bch).to(device=params.device)
 
-            y_hat_bch = model(x_bch)
-            y_hat.append(y_hat_bch.data.numpy())
+            if params.recon:
+                y_hat_bch, recon = model(x_bch, y_bch, True)
+                loss = loss_fn(y_hat_bch, y_bch, params, x_bch, recon)
+            else:
+                y_hat_bch = model(x_bch)
+                loss = loss_fn(y_hat_bch, y_bch, params)
 
-            loss = loss_fn(y_hat_bch, y_bch, params)
+            y_hat.append(y_hat_bch.data.numpy())
             avg_loss += loss / n
 
     # shrink size for faster calculation of metric
@@ -190,6 +201,8 @@ if __name__ == '__main__':
     data_dir, model_dir = get_data_and_model_dir(args.model)
     params = load_params(model_dir, args)
     params.model = args.model
+    params.recon = args.recon
+    params.recon_coef = args.recon_coef
 
     # set random seed for reproducibility
     np.random.seed(args.seed)

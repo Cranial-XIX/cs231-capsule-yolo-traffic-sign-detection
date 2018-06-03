@@ -10,6 +10,15 @@ class Flatten(nn.Module):
         return x.view(x.size(0), -1)
 
 
+class UnFlatten(nn.Module):
+    def __init__(self, c, w, h):
+        super(UnFlatten, self).__init__()
+        self.c, self.w, self.h = c, w, h
+
+    def forward(self, x):
+        return x.view(-1, self.c, self.w, self.h)
+
+
 class ConvNet(nn.Module):
     def __init__(self, params):
         super(ConvNet, self).__init__()
@@ -82,12 +91,35 @@ class CapsuleNet(nn.Module):
         self.traffic_sign_capsules = CapsuleLayer(params,
             n_caps=params.n_classes, n_nodes=16 * 9 * 9, in_C=8, out_C=16)
 
-    def forward(self, x):
+        self.decoder = nn.Sequential(
+            nn.Linear(16, 16 * 4 * 4),
+            nn.ReLU(),
+            UnFlatten(16, 4, 4),
+            nn.Upsample((8, 8)),
+            nn.Conv2d(16, 4, 3, padding=1),
+            nn.ReLU(),
+            nn.Upsample((16, 16)),
+            nn.Conv2d(4, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.Upsample((32, 32)),
+            nn.Conv2d(8, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 3, 3, padding=1),
+            nn.Tanh()
+        )
+
+    def forward(self, x, y=None, recon=False):
         x = F.relu(self.conv1(x))
         x = self.primary_capsules(x)
         x = self.traffic_sign_capsules(x).squeeze()
         scores = (x ** 2).sum(dim=-1) ** 0.5
-        return scores
+
+        if not recon:
+            return scores
+        else:
+            t = torch.gather(x, 1, y.repeat(16, 1).t().unsqueeze(1)).squeeze()
+            decoded = self.decoder(t)
+            return scores, decoded
 
 class DarkNet(nn.Module):
     def __init__(self, params):
