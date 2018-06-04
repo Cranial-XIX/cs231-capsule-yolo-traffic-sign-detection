@@ -75,8 +75,8 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
     y_hat = np.concatenate(y_hat, axis=0)
 
     # shrink size for faster calculation of metric
-    if n > config.max_metric_samples:
-        i = np.random.choice(n, config.max_metric_samples)
+    if n > config.max_metric_samples:   
+        i = np.random.choice(n, config.max_metric_samples).astype(int)
         y, y_hat = y[i], y_hat[i]
 
     if args.no_metric:
@@ -113,18 +113,18 @@ def evaluate(x, y, model, loss_fn, metric, params):
             y_hat.append(y_hat_bch.data.cpu().numpy())
             avg_loss += loss / n
 
+    y_hat = np.concatenate(y_hat, axis=0)
+    
     # shrink size for faster calculation of metric
     if n > config.max_metric_samples:
-        i = np.random.choice(n, config.max_metric_samples)
+        i = np.random.choice(n, config.max_metric_samples).astype(int)
         y, y_hat = y[i], y_hat[i]
-
-    y_hat = np.concatenate(y_hat, axis=0)
     
     if args.no_metric:
         metric_score = -1
     else:
         metric_score = metric(y, y_hat, params)
-
+        
     return avg_loss, metric_score
 
 
@@ -257,7 +257,7 @@ if __name__ == '__main__':
             data_dir, model_dir, restore_file=args.restore)
         
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 1)
+        utils.make_small_data(data_dir, 128)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, is_small=True, restore_file=args.restore)
