@@ -253,7 +253,8 @@ if __name__ == '__main__':
             if int(index) <= params.fine_tune:
                 param.requires_grad = False
 
-    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
+    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), 
+        lr=args.lr, weight_decay=params.weight_decay)
 
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, metric, params,
