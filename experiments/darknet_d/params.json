@@ -2,7 +2,7 @@
     "learning_rate": 3e-3,
     "batch_size": 32,
     "n_epochs": 50,
-    "lr_decay": 1,
+    "lr_decay": 0.5,
     "fine_tune": 18,
     "cuda": true,
     "l_coord": 5,
