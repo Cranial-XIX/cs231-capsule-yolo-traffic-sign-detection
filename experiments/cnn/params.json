@@ -3,7 +3,6 @@
     "n_classes": 43,
     "lr": 1e-3,
     "n_epochs": 32,
-    "dropout_rate": 0.5,
+    "dropout_rate": 0.0,
     "lr_decay": 0.1,
-    "weight_decay":1e-3
 }
