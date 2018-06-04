@@ -113,7 +113,7 @@ def center_rgb(x):
     return (x - 128) / 128
 
 
-def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.2):
+def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.05):
     if model_name in ('capsule', 'cnn'):
         _, h, w, _ = x.shape
 
