@@ -7,7 +7,7 @@
     "cuda": true,
     "l_coord": 5,
     "l_noobj": 0.5,
-    "n_boxes": 1,
+    "n_boxes": 2,
     "n_classes": 0,
     "darknet_input": 448,
     "capsule_input": 32,

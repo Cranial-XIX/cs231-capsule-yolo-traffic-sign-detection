@@ -51,7 +51,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
     y_hat = []
 
     for i, (x_bch, y_bch) in enumerate(zip(x_split, y_split)):
-        x_bch = utils.augmentation(x_bch, params.model)
+        # x_bch = utils.augmentation(x_bch, params.model)
         x_bch = torch.from_numpy(x_bch).float().permute(0, 3, 1, 2).to(
             device=params.device)
         y_bch = torch.from_numpy(y_bch).to(device=params.device)
@@ -143,8 +143,8 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
-    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
-    # scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
+    # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
     
     for epoch in range(params.n_epochs):
         if_eval = ((epoch+1) % params.eval_every == 0)
@@ -153,7 +153,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         loss_ev, metric_ev = evaluate(
             x_ev, y_ev, model, loss_fn, metric, params, if_eval)
 
-        scheduler.step(loss_tr)
+        scheduler.step()
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
@@ -253,23 +253,25 @@ if __name__ == '__main__':
             if int(index) <= params.fine_tune:
                 param.requires_grad = False
 
-    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), 
-        lr=args.lr, weight_decay=params.weight_decay)
+    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, restore_file=args.restore)
         
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 128)
+        utils.make_small_data(data_dir, 2)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, is_small=True, restore_file=args.restore)
 
     if args.mode == 'predict':
-        x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir)
-        x = x_tr[0:1]
-        y = y_tr[0:1]
+        # x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir)
+        # x = x_ev[0:100]
+        # y = y_ev[0:100]
+        x, y = pickle.load(open(data_dir + '/test.p', 'rb'))
+        x = x[0:100]
+        y = y[0:100]
 
         if args.combine is None:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
@@ -301,6 +303,11 @@ if __name__ == '__main__':
                     cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
 
         if args.show:
-            for i, image in enumerate(output):
-                cv2.imshow(str(i), image)
-            cv2.waitKey(0)
+            if args.model in ('darknet_d', 'darknet_r'):
+                for i, image in enumerate(output):
+                    cv2.imshow(str(i), image)
+                cv2.waitKey(0)
+            else:
+                print(output)
+                print(y)
+                print("acc", np.mean(y == output))

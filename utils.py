@@ -129,7 +129,7 @@ def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.05):
     hsv = rgb_to_hsv((x.reshape(-1, 3) + 1) / 2)
     hsv[:, 2] += np.random.rand() * max_lightness_increase
     rgb = hsv_to_rgb(hsv).reshape(-1, h, w, 3)
-
+    
     return rgb
 
 
