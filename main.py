@@ -229,7 +229,7 @@ if __name__ == '__main__':
     # set random seed for reproducibility
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if params.device == "cuda":
+    if params.device == 'cuda':
         torch.cuda.manual_seed(args.seed)
 
     model_loss_predict = {

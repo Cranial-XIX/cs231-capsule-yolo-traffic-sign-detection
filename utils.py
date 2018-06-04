@@ -52,7 +52,7 @@ def save_checkpoint(state, is_best, checkpoint):
 def load_checkpoint(checkpoint, model, params, optimizer=None):
     if not os.path.exists(checkpoint):
         raise("File doesn't exist {}".format(checkpoint))
-    checkpoint = torch.load(checkpoint, map_location = params.device)
+    checkpoint = torch.load(checkpoint, lambda storage, loc: storage)
     model.load_state_dict(checkpoint['state_dict'])
 
     if optimizer:
