@@ -9,7 +9,7 @@ import time
 import torch
 import utils
 
-from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP
+from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
@@ -72,7 +72,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
         t.set_postfix(loss='{:05.3f}'.format(loss.item()))
         t.update()
 
-        avg_loss += loss.item() / n
+        avg_loss += loss.item() / n_batch
 
     y_hat = np.concatenate(y_hat, axis=0)
 
@@ -112,7 +112,7 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
                 loss = loss_fn(y_hat_bch, y_bch, params)
 
             y_hat.append(y_hat_bch.data.cpu().numpy())
-            avg_loss += loss / n
+            avg_loss += loss / n_batch
 
     y_hat = np.concatenate(y_hat, axis=0)
     
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     model_loss_predict = {
         'cnn'             : (ConvNet, cnn_loss, class_pred, recog_acc),
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
-        'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_AP),
+        'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
     }
@@ -260,18 +260,21 @@ if __name__ == '__main__':
             data_dir, model_dir, restore_file=args.restore)
         
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 2)
+        utils.make_small_data(data_dir, 3)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, is_small=True, restore_file=args.restore)
 
     if args.mode == 'predict':
+        if args.restore is None:
+            print('Must give restore file last/bast')
+            sys.exit()
         # x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir)
         # x = x_ev[0:100]
         # y = y_ev[0:100]
-        x, y = pickle.load(open(data_dir + '/test.p', 'rb'))
-        x = x[0:100]
-        y = y[0:100]
+        x, y = pickle.load(open(data_dir + '/train.p', 'rb'))
+        x = x[0:3]
+        y = y[0:3]
 
         if args.combine is None:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
@@ -304,10 +307,10 @@ if __name__ == '__main__':
 
         if args.show:
             if args.model in ('darknet_d', 'darknet_r'):
+                print(y_hat[0, 0, 0, 0])
+
                 for i, image in enumerate(output):
                     cv2.imshow(str(i), image)
                 cv2.waitKey(0)
             else:
-                print(output)
-                print(y)
                 print("acc", np.mean(y == output))

@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch
 import config
 
-def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.6):
+def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.5):
     """ Darknet prediction 
     
     Args:
@@ -46,7 +46,6 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, con
         y_hat = model(x)
 
     y_hat = y_hat.data.cpu().numpy()
-
     image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_hat, params, image_hw = image_hw, conf_th = conf_th)
     output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
 

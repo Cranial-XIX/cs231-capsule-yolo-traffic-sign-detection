@@ -122,9 +122,9 @@ def calc_iou_individual(gt_box, pred_box):
     far_y = np.min([y2_t, y2_p])
     near_y = np.max([y1_t, y1_p])
 
-    inter_area = (far_x - near_x + 1) * (far_y - near_y + 1)
-    true_box_area = (x2_t - x1_t + 1) * (y2_t - y1_t + 1)
-    pred_box_area = (x2_p - x1_p + 1) * (y2_p - y1_p + 1)
+    inter_area = (far_x - near_x) * (far_y - near_y)
+    true_box_area = (x2_t - x1_t) * (y2_t - y1_t)
+    pred_box_area = (x2_p - x1_p) * (y2_p - y1_p)
     iou = inter_area / (true_box_area + pred_box_area - inter_area)
     return iou
 
@@ -235,6 +235,24 @@ def detect_AP(y, y_hat, params, show=False, save=False):
     avg_ps = np.array(avg_ps)
     return np.mean(avg_ps)
 
+def detect_acc(y, y_hat, params):
+    conf_th = 0.5
+    iou_th = 0.5
+    y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
+    y_hat_im_idx, y_hat_bx, _ = utils.y_to_boxes_vec(y_hat, params, conf_th=conf_th)
+    im_indices = np.arange(y.shape[0])
+
+    TP = FP = FN = 0
+    for j in im_indices:
+        y_, y_hat_ = y_bx[y_im_idx == j], y_hat_bx[y_hat_im_idx == j]
+        tp, fp, fn = single_img_confusion(y_, y_hat_, iou_th)
+        TP += tp
+        FP += fp
+        FN += fn
+    
+    p, r = precision_and_recall(TP, FP, FN)
+    avg_pr = (p + r) / 2
+    return avg_pr
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
     iou_ths = np.linspace(0.5, 0.95, 10)
