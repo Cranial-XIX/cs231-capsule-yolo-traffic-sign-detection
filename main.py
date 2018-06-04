@@ -294,7 +294,7 @@ if __name__ == '__main__':
             # pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
 
         if args.save:
-            save_dir = os.path.join(args.model_dir, 'result')
+            save_dir = os.path.join(model_dir, 'result')
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
 
