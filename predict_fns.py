@@ -45,7 +45,7 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, con
         x = x.to(device=params.device, dtype=torch.float32)
         y_hat = model(x)
 
-    y_hat = y_hat.data.numpy()
+    y_hat = y_hat.data.cpu().numpy()
 
     image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_hat, params, image_hw = image_hw, conf_th = conf_th)
     output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
@@ -68,7 +68,7 @@ def class_pred(x, model, model_dir, params, restore_file):
                 device=params.device)
         y_hat = model(x)
 
-    y_hat = y_hat.data.numpy()
+    y_hat = y_hat.data.cpu().numpy()
     classes = np.argmax(y_hat, axis = 1)
     return y_hat, classes
 
