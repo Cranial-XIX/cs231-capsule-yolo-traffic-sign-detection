@@ -206,7 +206,7 @@ def load_params(model_dir, args):
     json_path = os.path.join(model_dir, 'params.json')
     params = utils.Params(json_path)
 
-    params.device = "cuda" if torch.cuda.is_available() else "cpu"
+    params.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     params.seed = args.seed
     params.dropout = args.dropout
 
