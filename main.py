@@ -263,7 +263,7 @@ if __name__ == '__main__':
     if args.summary:
         summary(model, config.input_shape[args.model])
 
-    if args.fine_tune:
+    if args.fine_tune > 0:
         model.load_weights('./darknet19_weights.npz', 18)
         for name, param in model.named_parameters():
             layer_type, index = name.split('.')[1].split('_')
