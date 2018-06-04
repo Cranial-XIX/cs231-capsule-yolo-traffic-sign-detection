@@ -5,6 +5,5 @@
     "lr": 1e-3,
     "n_epochs": 32,
     "dropout_rate": 0.8,
-    "lr_decay": 0.1,
-    "weight_decay": 1
+    "lr_decay": 0.1
 }

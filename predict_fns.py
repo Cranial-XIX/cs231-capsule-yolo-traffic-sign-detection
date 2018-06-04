@@ -40,7 +40,7 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, con
                                       transforms.ToTensor()])
     x = torch.stack([transformer(image) for image in images])
 
-    model.train()
+    model.eval()
     with torch.no_grad():
         x = x.to(device=params.device, dtype=torch.float32)
         y_hat = model(x)
@@ -62,7 +62,7 @@ def class_pred(x, model, model_dir, params, restore_file):
     print("Restoring parameters from {}".format(restore_path))
     utils.load_checkpoint(restore_path, model, params)
     
-    model.train()
+    model.eval()
     with torch.no_grad():
         x = torch.from_numpy(x).float().permute(0, 3, 1, 2).to(
                 device=params.device)
