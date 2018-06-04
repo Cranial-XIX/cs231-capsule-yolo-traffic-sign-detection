@@ -6,6 +6,10 @@ import utils
 
 from sklearn.metrics import auc, roc_auc_score, average_precision_score, roc_curve, precision_recall_curve
 
+def recog_acc(y, y_hat, params):
+    y_hat_pred = np.argmax(y_hat, axis=1)
+    return np.sum(y == y_hat_pred) / y.shape[0]
+
 def recog_auc(y, y_hat, params, show=False, save=False):
     n_classes = params.n_classes
     y = np.eye(n_classes)[y]
@@ -40,7 +44,7 @@ def recog_auc(y, y_hat, params, show=False, save=False):
         plt.show()
 
     if save:
-        config.model_dir[params.model]+'/r_auc.png'
+        plt.savefig(config.model_dir[params.model]+'/r_auc.png')
 
     return roc_auc['micro']
 
@@ -83,7 +87,7 @@ def recog_pr(y, y_hat, params, show=False, save=False):
         plt.show()
 
     if save:
-        config.model_dir[params.model]+'/r_pr.png'
+        plt.savefig(config.model_dir[params.model]+'/r_pr.png')
 
     return average_precision['micro']
 

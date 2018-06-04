@@ -9,7 +9,7 @@ import time
 import torch
 import utils
 
-from metrics import recog_auc, recog_pr, detect_AP, detect_and_recog_mAP
+from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
@@ -29,9 +29,10 @@ parser.add_argument('--restore', default='last', help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
+parser.add_argument('--eval_every', default=4, help='evaluate metric every # epochs')
 
 
-def train(x, y, model, optimizer, loss_fn, metric, params):
+def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
     model.train()
 
     x, y = utils.shuffle(x, y)
@@ -70,16 +71,19 @@ def train(x, y, model, optimizer, loss_fn, metric, params):
     y_hat = np.concatenate(y_hat, axis=0)
 
     # shrink size for faster calculation of metric
-    if n > config.max_metric_samples:
-        i = np.random.choice(n, config.max_metric_samples)
-        y, y_hat = y[i], y_hat[i]
+    metric_score = None
 
-    metric_score = metric(y, y_hat, params)
+    if if_eval:
+        if n > config.max_metric_samples:
+            i = np.random.choice(n, config.max_metric_samples)
+            y, y_hat = y[i], y_hat[i]
+
+        metric_score = metric(y, y_hat, params)
 
     return avg_loss, metric_score
 
 
-def evaluate(x, y, model, loss_fn, metric, params):
+def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
     model.eval()
 
     total = len(y)
@@ -106,12 +110,15 @@ def evaluate(x, y, model, loss_fn, metric, params):
             avg_loss += loss / n
 
     # shrink size for faster calculation of metric
-    if n > config.max_metric_samples:
-        i = np.random.choice(n, config.max_metric_samples)
-        y, y_hat = y[i], y_hat[i]
+    metric_score = None
 
-    y_hat = np.concatenate(y_hat, axis=0)
-    metric_score = metric(y, y_hat, params)
+    if if_eval:
+        if n > config.max_metric_samples:
+            i = np.random.choice(n, config.max_metric_samples)
+            y, y_hat = y[i], y_hat[i]
+
+        y_hat = np.concatenate(y_hat, axis=0)
+        metric_score = metric(y, y_hat, params)
 
     return avg_loss, metric_score
 
@@ -132,15 +139,14 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
 
     for epoch in range(params.n_epochs):
+        if_eval = ((epoch+1) % params.eval_every == 0)
         loss_tr, metric_tr = train(
-            x_tr, y_tr, model, optimizer, loss_fn, metric, params)
+            x_tr, y_tr, model, optimizer, loss_fn, metric, params, if_eval)
         loss_ev, metric_ev = evaluate(
-            x_ev, y_ev, model, loss_fn, metric, params)
+            x_ev, y_ev, model, loss_fn, metric, params, if_eval)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
-        params.writer.add_scalar('train_metric', metric_tr, epoch)
-        params.writer.add_scalar('eval_metric', metric_ev, epoch)
 
         is_best = loss_ev < best_loss_ev
 
@@ -157,22 +163,24 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         if is_best:
             best_loss_ev = loss_ev
 
-        tqdm.write(
-            "epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
-            " best eval loss: {:05.3f} | " \
-            "train metric: {:05.3f} | eval metric: {:05.3f}".format(
-                epoch+1, loss_tr, loss_ev,
-                best_loss_ev, metric_tr, metric_ev))
+        if if_eval:
+            params.writer.add_scalar('train_metric', metric_tr, epoch)
+            params.writer.add_scalar('eval_metric', metric_ev, epoch)
+            tqdm.write(
+                "epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
+                " best eval loss: {:05.3f} | " \
+                "train metric: {:05.3f} | eval metric: {:05.3f}".format(
+                    epoch+1, loss_tr, loss_ev,
+                    best_loss_ev, metric_tr, metric_ev))
+            metrics_tr.append(metric_tr)
+            metrics_ev.append(metric_ev)
+        np.save(os.path.join(model_dir, 'metrics_tr'), metrics_tr)
+        np.save(os.path.join(model_dir, 'metrics_ev'), metrics_ev)
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)
-        metrics_tr.append(metric_tr)
-        metrics_ev.append(metric_ev)
-
         np.save(os.path.join(model_dir, 'losses_tr'), losses_tr)
         np.save(os.path.join(model_dir, 'losses_ev'), losses_ev)
-        np.save(os.path.join(model_dir, 'metrics_tr'), metrics_tr)
-        np.save(os.path.join(model_dir, 'metrics_ev'), metrics_ev)
 
     params.writer.close()
 
@@ -203,6 +211,7 @@ if __name__ == '__main__':
     params.model = args.model
     params.recon = args.recon
     params.recon_coef = args.recon_coef
+    params.eval_every = args.eval_every
 
     # set random seed for reproducibility
     np.random.seed(args.seed)
@@ -211,8 +220,8 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(args.seed)
 
     model_loss_predict = {
-        'cnn'             : (ConvNet, cnn_loss, class_pred, recog_auc),
-        'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_auc),
+        'cnn'             : (ConvNet, cnn_loss, class_pred, recog_acc),
+        'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_AP),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
