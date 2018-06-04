@@ -2,6 +2,8 @@
     "learning_rate": 3e-3,
     "batch_size": 32,
     "n_epochs": 100,
+    "lr_decay": 0.1,
+    "fine_tune": 18,
     "device": "cpu",
     "l_coord": 5,
     "l_noobj": 0.5,

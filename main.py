@@ -14,7 +14,7 @@ from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
 from tensorboardX import SummaryWriter
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from torchsummary import summary
 from tqdm import trange, tqdm
 
@@ -25,11 +25,17 @@ parser.add_argument('--summary', default=True, help='if summarize model', action
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
-parser.add_argument('--restore', default='last', help="last | best")
+parser.add_argument('--restore', default=None, help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--eval_every', default=4, help='evaluate metric every # epochs')
+parser.add_argument('--fine_tune', default=False, help='if fine tune', action='store_true')
+parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
+parser.add_argument('--save', default=False, help='save result', action='store_true')
+parser.add_argument('--model_dir', default=None, help='model dir')
+parser.add_argument('--show', default=False, help='save result', action='store_true')
+
 
 
 def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
@@ -57,7 +63,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
             y_hat_bch = model(x_bch)
             loss = loss_fn(y_hat_bch, y_bch, params)
 
-        y_hat.append(y_hat_bch.data.numpy())
+        y_hat.append(y_hat_bch.data.cpu().numpy())
 
         optimizer.zero_grad()
         loss.backward()
@@ -71,13 +77,12 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
     y_hat = np.concatenate(y_hat, axis=0)
 
     # shrink size for faster calculation of metric
-    metric_score = None
+    metric_score = -1
 
-    if if_eval:
+    if if_eval and not args.no_metric:
         if n > config.max_metric_samples:
             i = np.random.choice(n, config.max_metric_samples)
             y, y_hat = y[i], y_hat[i]
-
         metric_score = metric(y, y_hat, params)
 
     return avg_loss, metric_score
@@ -106,13 +111,13 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
                 y_hat_bch = model(x_bch)
                 loss = loss_fn(y_hat_bch, y_bch, params)
 
-            y_hat.append(y_hat_bch.data.numpy())
+            y_hat.append(y_hat_bch.data.cpu().numpy())
             avg_loss += loss / n
 
     # shrink size for faster calculation of metric
-    metric_score = None
+    metric_score = -1
 
-    if if_eval:
+    if if_eval and not args.no_metric:
         if n > config.max_metric_samples:
             i = np.random.choice(n, config.max_metric_samples)
             y, y_hat = y[i], y_hat[i]
@@ -137,13 +142,17 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
-
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
+    
     for epoch in range(params.n_epochs):
         if_eval = ((epoch+1) % params.eval_every == 0)
         loss_tr, metric_tr = train(
             x_tr, y_tr, model, optimizer, loss_fn, metric, params, if_eval)
         loss_ev, metric_ev = evaluate(
             x_ev, y_ev, model, loss_fn, metric, params, if_eval)
+
+        scheduler.step(loss_tr)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
@@ -174,8 +183,8 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
                     best_loss_ev, metric_tr, metric_ev))
             metrics_tr.append(metric_tr)
             metrics_ev.append(metric_ev)
-        np.save(os.path.join(model_dir, 'metrics_tr'), metrics_tr)
-        np.save(os.path.join(model_dir, 'metrics_ev'), metrics_ev)
+            np.save(os.path.join(model_dir, 'metrics_tr'), metrics_tr)
+            np.save(os.path.join(model_dir, 'metrics_ev'), metrics_ev)
 
         losses_tr.append(loss_tr)
         losses_ev.append(loss_ev)
@@ -207,6 +216,9 @@ def load_params(model_dir, args):
 if __name__ == '__main__':
     args = parser.parse_args()
     data_dir, model_dir = get_data_and_model_dir(args.model)
+    if args.model_dir is not None:
+        model_dir= args.model_dir
+        
     params = load_params(model_dir, args)
     params.model = args.model
     params.recon = args.recon
@@ -233,27 +245,33 @@ if __name__ == '__main__':
     if args.summary:
         summary(model, config.input_shape[args.model])
 
-    optimizer = Adam(model.parameters(), lr=args.lr)
+    if args.fine_tune:
+        model.load_weights('./darknet19_weights.npz', 18)
+        for name, param in model.named_parameters():
+            layer_type, index = name.split('.')[1].split('_')
+            if int(index) <= params.fine_tune:
+                param.requires_grad = False
+
+    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 
     if args.mode == 'train':
         train_and_evaluate(model, optimizer, loss_fn, metric, params,
-            data_dir, model_dir)
+            data_dir, model_dir, restore_file=args.restore)
         
     if args.mode == 'overfit':
         utils.make_small_data(data_dir, 1)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
-            data_dir, model_dir, is_small=True)
+            data_dir, model_dir, is_small=True, restore_file=args.restore)
 
     if args.mode == 'predict':
         x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir)
-        x = x_tr[0:2]
-        y = y_tr[0:2]
+        x = x_tr[0:1]
+        y = y_tr[0:1]
 
         if args.combine is None:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            print(y.shape, y_hat.shape)
-            pickle.dump((y, y_hat), open('./debug/{}.p'.format(args.model), 'wb'))
+            # pickle.dump((y, y_hat), open('./debug/{}.p'.format(args.model), 'wb'))
         else:
             if args.model not in ('darknet_d', 'darknet_r') or \
             args.combine not in ('cnn', 'capsule'):
@@ -269,9 +287,18 @@ if __name__ == '__main__':
             dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
                 class_model, class_model_dir, class_params, args.restore)
 
-            pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
+            # pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
 
-        if args.model in ('darknet_d', 'darknet_r'):
+        if args.save:
+            save_dir = os.path.join(args.model_dir, 'result')
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            if args.model in ('darknet_d', 'darknet_r'):
+                for i, image in enumerate(output):
+                    cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
+
+        if args.show:
             for i, image in enumerate(output):
                 cv2.imshow(str(i), image)
             cv2.waitKey(0)
