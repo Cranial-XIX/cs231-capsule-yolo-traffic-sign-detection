@@ -113,7 +113,7 @@ def center_rgb(x):
     return (x - 128) / 128
 
 
-def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.2):
+def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.05):
     _, h, w, _ = x.shape
     if model_name in ('capsule', 'cnn'):
         h_shift, w_shift = np.random.randint(-max_shift, max_shift + 1, size=2)
