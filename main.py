@@ -81,7 +81,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
 
     if if_eval and not args.no_metric:
         if n > config.max_metric_samples:
-            i = np.random.choice(n, config.max_metric_samples)
+            i = np.random.choice(n, config.max_metric_samples).astype(int)
             y, y_hat = y[i], y_hat[i]
         metric_score = metric(y, y_hat, params)
 
@@ -121,7 +121,7 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
 
     if if_eval and not args.no_metric:
         if n > config.max_metric_samples:
-            i = np.random.choice(n, config.max_metric_samples)
+            i = np.random.choice(n, config.max_metric_samples).astype(int)
             y, y_hat = y[i], y_hat[i]
 
         y_hat = np.concatenate(y_hat, axis=0)
