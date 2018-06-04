@@ -49,6 +49,7 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
     t = trange(n_batch)
     avg_loss = 0
     y_hat = []
+    avg_iou = 0
 
     for i, (x_bch, y_bch) in enumerate(zip(x_split, y_split)):
         # x_bch = utils.augmentation(x_bch, params.model)
@@ -74,6 +75,9 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
 
         avg_loss += loss.item() / n_batch
 
+        if args.model == 'darknet_d':
+            avg_iou += params.avg_iou.item() / n_batch
+
     y_hat = np.concatenate(y_hat, axis=0)
 
     # shrink size for faster calculation of metric
@@ -84,7 +88,9 @@ def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
             i = np.random.choice(n, config.max_metric_samples).astype(int)
             y, y_hat = y[i], y_hat[i]
         metric_score = metric(y, y_hat, params)
-
+    
+    if args.model == 'darknet_d':
+        tqdm.write("train avg iou: {:05.3f}".format(avg_iou))
     return avg_loss, metric_score
 
 
@@ -97,6 +103,7 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
     n = y.shape[0]
     avg_loss = 0
     y_hat = []
+    avg_iou = 0
 
     with torch.no_grad():
         for i, (x_bch, y_bch) in enumerate(zip(x_split, y_split)):
@@ -114,6 +121,9 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
             y_hat.append(y_hat_bch.data.cpu().numpy())
             avg_loss += loss / n_batch
 
+            if args.model == 'darknet_d':
+                avg_iou += params.avg_iou.item() / n_batch
+                
     y_hat = np.concatenate(y_hat, axis=0)
     
     # shrink size for faster calculation of metric
@@ -125,7 +135,10 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
             y, y_hat = y[i], y_hat[i]
 
         metric_score = metric(y, y_hat, params)
-        
+    
+    if args.model == 'darknet_d':
+        tqdm.write("test avg iou: {:05.3f}".format(avg_iou))
+
     return avg_loss, metric_score
 
 
