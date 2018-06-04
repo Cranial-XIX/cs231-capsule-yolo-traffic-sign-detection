@@ -113,18 +113,19 @@ def center_rgb(x):
     return (x - 128) / 128
 
 
-def augmentation(x, max_shift=4, max_lightness_increase=0.2):
-    _, h, w, _ = x.shape
+def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.2):
+    if model_name in ('capsule', 'cnn'):
+        _, h, w, _ = x.shape
 
-    h_shift, w_shift = np.random.randint(-max_shift, max_shift + 1, size=2)
-    source_height_slice = slice(max(0, h_shift), h_shift + h)
-    source_width_slice = slice(max(0, w_shift), w_shift + w)
-    target_height_slice = slice(max(0, -h_shift), -h_shift + h)
-    target_width_slice = slice(max(0, -w_shift), -w_shift + w)
+        h_shift, w_shift = np.random.randint(-max_shift, max_shift + 1, size=2)
+        source_height_slice = slice(max(0, h_shift), h_shift + h)
+        source_width_slice = slice(max(0, w_shift), w_shift + w)
+        target_height_slice = slice(max(0, -h_shift), -h_shift + h)
+        target_width_slice = slice(max(0, -w_shift), -w_shift + w)
 
-    shifted_image = np.zeros_like(x)
-    shifted_image[:, source_height_slice, source_width_slice, :] = \
-        x[:, target_height_slice, target_width_slice, :]
+        shifted_image = np.zeros_like(x)
+        shifted_image[:, source_height_slice, source_width_slice, :] = \
+            x[:, target_height_slice, target_width_slice, :]
 
     hsv = rgb_to_hsv((x.reshape(-1, 3) + 1) / 2)
     hsv[:, 2] += np.random.rand() * max_lightness_increase
