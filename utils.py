@@ -114,9 +114,8 @@ def center_rgb(x):
 
 
 def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.2):
+    _, h, w, _ = x.shape
     if model_name in ('capsule', 'cnn'):
-        _, h, w, _ = x.shape
-
         h_shift, w_shift = np.random.randint(-max_shift, max_shift + 1, size=2)
         source_height_slice = slice(max(0, h_shift), h_shift + h)
         source_width_slice = slice(max(0, w_shift), w_shift + w)
