@@ -9,8 +9,8 @@
     "l_noobj": 0.5,
     "n_boxes": 2,
     "n_classes": 43,
-    "darknet_input": 448,
+    "darknet_input": 224,
     "capsule_input": 32,
-    "n_grid": 14,
+    "n_grid": 7,
     "add_signs":3
 }

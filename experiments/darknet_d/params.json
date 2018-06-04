@@ -1,5 +1,5 @@
 {
-    "learning_rate": 1e-3,
+    "learning_rate": 3e-3,
     "batch_size": 32,
     "n_epochs": 50,
     "lr_decay": 1,
@@ -9,7 +9,7 @@
     "l_noobj": 0.5,
     "n_boxes": 2,
     "n_classes": 0,
-    "darknet_input": 448,
+    "darknet_input": 224,
     "capsule_input": 32,
-    "n_grid": 14
+    "n_grid": 7
 }
