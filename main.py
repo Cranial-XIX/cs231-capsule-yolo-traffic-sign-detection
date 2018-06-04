@@ -153,6 +153,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     losses_ev = []
     metrics_tr = []
     metrics_ev = []
+    best_metric_ev = float('inf')
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
@@ -171,7 +172,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
 
-        is_best = loss_ev < best_loss_ev
+        is_best = metric_ev < best_metric_ev
 
         utils.save_checkpoint(
             {
@@ -184,7 +185,10 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
 
         # If best_eval, best_save_path
         if is_best:
-            best_loss_ev = loss_ev
+            best_metric_ev = metric_ev
+
+        if loss_ev < best_loss_ev:
+            best_loss_ev = loss_ev 
 
         if if_eval:
             params.writer.add_scalar('train_metric', metric_tr, epoch)
@@ -192,9 +196,9 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
             tqdm.write(
                 "epoch {} | train loss: {:05.3f} | eval loss: {:05.3f} |" \
                 " best eval loss: {:05.3f} | " \
-                "train metric: {:05.3f} | eval metric: {:05.3f}".format(
+                "train metric: {:05.3f} | eval metric: {:05.3f} | best eval metric {:05.3f}".format(
                     epoch+1, loss_tr, loss_ev,
-                    best_loss_ev, metric_tr, metric_ev))
+                    best_loss_ev, metric_tr, metric_ev, best_metric_ev))
             metrics_tr.append(metric_tr)
             metrics_ev.append(metric_ev)
             np.save(os.path.join(model_dir, 'metrics_tr'), metrics_tr)
