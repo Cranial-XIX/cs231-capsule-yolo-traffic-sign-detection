@@ -53,7 +53,7 @@ def gtsrb(root=config.GTSRB):
 
     x_tr, y_tr = utils.shuffle(x_tr, y_tr)
     x_ev, y_ev = utils.shuffle(x_ev, y_ev)
-    x_te, y_te = utils.shuffle(x_ev, y_te)
+    x_te, y_te = utils.shuffle(x_te, y_te)
 
     pickle.dump((x_tr, y_tr), open(root+'/train.p', 'wb'))
     pickle.dump((x_ev, y_ev), open(root+'/eval.p', 'wb'))
