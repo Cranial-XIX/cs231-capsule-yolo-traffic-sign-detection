@@ -353,6 +353,69 @@ class DarkCapsuleNet(nn.Module):
         ]))
 
         self.traffic_sign_capsules = CapsuleLayer(params,
+            n_caps=1,
+            n_nodes=16 * 32, in_C=8, out_C=5)
+
+        self.decoder = nn.Sequential(
+            nn.Linear(16, 16 * 4 * 4),
+            nn.ReLU(),
+            UnFlatten(16, 4, 4),
+            nn.Upsample((8, 8)),
+            nn.Conv2d(16, 4, 3, padding=1),
+            nn.ReLU(),
+            nn.Upsample((16, 16)),
+            nn.Conv2d(4, 8, 3, padding=1),
+            nn.ReLU(),
+            nn.Upsample((32, 32)),
+            nn.Conv2d(8, 16, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 3, 3, padding=1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        B, _, H, W = x.size()
+        g = self.params.n_grid
+        x = self.conv(x)
+        x = torch.chunk(x.view(B, 256, 4, 4*g**2), g**2, 3)  # n_grid^2 * [B, 256, 4, 4]
+
+        x = [xx.permute(0, 2, 3, 1).contiguous().view(B, -1, 8).unsqueeze(0) for xx in x] # n_grid^2 * [B, 512, 8]
+        x = torch.cat(x, 0) # [n_grid^2, B, 512, 8]
+
+        x = self.traffic_sign_capsules(x.view(-1, 512, 8)).squeeze() # [n_grid^2 *B, 5]
+        x = x.view(g, g, B, 5).permute(2, 0, 1, 3)
+        return x
+
+
+class DarkCapsuleNet3(nn.Module):
+    def __init__(self, params):
+        super(DarkCapsuleNet3, self).__init__()
+
+        self.params = params
+
+        self.conv = nn.Sequential(OrderedDict([
+            ('conv_1', nn.Conv2d(3, 128, 3, padding=1)),
+            ('bn_1', nn.BatchNorm2d(128)),
+            ('relu_1', nn.LeakyReLU(0.1)),
+
+            ('conv_2', nn.Conv2d(128, 256, 3, padding=1)),
+            ('bn_2', nn.BatchNorm2d(256)),
+            ('relu_2', nn.LeakyReLU(0.1)),
+
+            ('conv_3', nn.Conv2d(256, 64, 4, 2, padding=1)),
+            ('bn_3', nn.BatchNorm2d(64)),
+            ('relu_3', nn.LeakyReLU(0.1)),
+
+            ('conv_4', nn.Conv2d(64, 128, 4, 2, padding=1)),
+            ('bn_4', nn.BatchNorm2d(128)),
+            ('relu_4', nn.LeakyReLU(0.1)),
+
+            ('conv_5', nn.Conv2d(128, 256, 4, 2, padding=1)),
+            ('bn_5', nn.BatchNorm2d(256)),
+            ('relu_5', nn.LeakyReLU(0.1)),
+        ]))
+
+        self.traffic_sign_capsules = CapsuleLayer(params,
             n_caps=params.n_classes,
             n_nodes=16 * 32, in_C=8, out_C=5+16)
 
@@ -377,11 +440,10 @@ class DarkCapsuleNet(nn.Module):
         B, _, H, W = x.size()
         g = self.params.n_grid
         x = self.conv(x)
-        x = torch.chunk(x.view(B, 256, 4, 4*g**2), 
-            self.params.n_grid**2, 3)  # n_grid^2 * [B, 256, 4, 4]
+        x = torch.chunk(x.view(B, 256, 4, 4*g**2), g**2, 3)  # n_grid^2 * [B, 256, 4, 4]
 
         x = [xx.permute(0, 2, 3, 1).contiguous().view(B, -1, 8).unsqueeze(0) for xx in x] # n_grid^2 * [B, 512, 8]
-        x = torch.cat(x, 0) # n_grid^2 * B, 512 * 8
+        x = torch.cat(x, 0) # [n_grid^2, B, 512, 8]
 
         x = self.traffic_sign_capsules(x.view(-1, 512, 8)).squeeze() # [n_grid^2 *B, 43, 21]
         x = x.view(g, g, B, self.params.n_classes, 21).permute(2, 0, 1, 3, 4)

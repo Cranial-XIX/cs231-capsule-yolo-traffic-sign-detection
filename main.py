@@ -31,7 +31,7 @@ parser.add_argument('--recon', default=False, help='if use reconstruction loss',
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--eval_every', default=1, type=int, help='evaluate metric every # epochs')
 parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed layer in fine tuning')
-parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
+parser.add_argument('--no_metric', help='do not compute metric', action='store_false')
 parser.add_argument('--save', default=False, help='save result', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
@@ -254,7 +254,7 @@ if __name__ == '__main__':
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
-        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, darkcapsule_acc),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
     }
 
     model, loss_fn, predict_fn, metric = model_loss_predict[args.model]

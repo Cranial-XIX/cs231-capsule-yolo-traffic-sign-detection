@@ -308,6 +308,7 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
 def darkcapsule_acc(y, y_hat, params):
     conf_th = 0.5
     iou_th = 0.5
+    y_hat = y_hat * np.sqrt(2)
     y_cls = y[:,:,:,5:]
     cap_other = y_hat[:,:,:,:,5:]
     y_hat_cls = np.argmax(np.sum((cap_other ** 2), -1) ** 0.5, -1)

@@ -160,7 +160,7 @@ def darkcapsule2_loss(caps, y, params):
     return (obj_loss.sum() + coord_loss.sum() + class_loss.sum()) / y.size(0)
 
 
-def darkcapsule_loss(caps, y, params, x=None, recon=None):
+def darkcapsule3_loss(caps, y, params, x=None, recon=None):
     y = y.float()
     caps = caps * np.sqrt(2)
     y_r, y_phi = utils.polar_transform(y[:,:,:,:5])         # (:,g,g) (:,g,g,5)
@@ -174,7 +174,27 @@ def darkcapsule_loss(caps, y, params, x=None, recon=None):
 
     margin_loss = y_cls * left + 0.5 * (1 - y_cls) * right
 
-    coord_loss = (cap_phi - y_phi.unsqueeze(3)) ** 2
+    coord_loss = -cap_phi * y_phi.unsqueeze(3)
+
+    recon_loss = 0
+    if params.recon:
+        recon_loss = F.mse_loss(x, recon, size_average=False)
+
+    loss = (margin_loss.sum() + coord_loss.sum()) / y.size(0) + recon_loss
+    return loss
+
+
+def darkcapsule_loss(caps, y, params, x=None, recon=None):
+    y = y.float()
+    y_r, y_phi = utils.polar_transform(y[:,:,:,:5])         # (:,g,g) (:,g,g,5)
+
+    cap_r = (caps ** 2).sum(dim=-1) ** 0.5                  # (:,g,g)
+    left = F.relu(0.9 - cap_r) ** 2
+    right = F.relu(cap_r - 0.1) ** 2
+
+    margin_loss = y_r * left + 0.5 * (1 - y_r) * right
+
+    coord_loss = -caps * y_phi
 
     recon_loss = 0
     if params.recon:
