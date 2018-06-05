@@ -172,7 +172,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
 
-        is_best = metric_ev < best_metric_ev
+        is_best = metric_ev > best_metric_ev
 
         utils.save_checkpoint(
             {
@@ -286,12 +286,10 @@ if __name__ == '__main__':
         if args.restore is None:
             print('Must give restore file last/bast')
             sys.exit()
-        # x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir)
-        # x = x_ev[0:100]
-        # y = y_ev[0:100]
-        x, y = pickle.load(open(data_dir + '/train.p', 'rb'))
-        x = x[0:3]
-        y = y[0:3]
+
+        x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
+        # x = x[0:100]
+        # y = y[0:100]
 
         if args.combine is None:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
@@ -321,13 +319,14 @@ if __name__ == '__main__':
             if args.model in ('darknet_d', 'darknet_r'):
                 for i, image in enumerate(output):
                     cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
+                print(detect_acc(y, y_hat, params))
 
         if args.show:
             if args.model in ('darknet_d', 'darknet_r'):
-                print(y_hat[0, 0, 0, 0])
-
-                for i, image in enumerate(output):
+                for i, image in enumerate(output[0:10]):
                     cv2.imshow(str(i), image)
                 cv2.waitKey(0)
+
+                detect_AP(y, y_hat, params, show = True)
             else:
                 print("acc", np.mean(y == output))
