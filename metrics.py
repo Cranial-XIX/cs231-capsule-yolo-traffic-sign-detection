@@ -277,6 +277,7 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
 
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
+    params.n_classes = 43
     iou_ths = np.linspace(0.5, 0.95, 10)
     conf_ths = np.linspace(0, 1, 100)
 
@@ -303,11 +304,13 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
                     TP += tp
                     FP += fp
                     FN += fn
+
                 p, r = precision_and_recall(TP, FP, FN)
                 precisions.append(p)
                 recalls.append(r)
             p, r = np.array(precisions), np.array(recalls)
             avg_p = average_precision(p, r)
+
             if show or save:
                 ax = plot_pr_curve(
                     precisions, recalls, label='iou={:.2f}'.format(iou_th),
@@ -323,7 +326,6 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
             plt.legend()
             plt.show()
 
-    avg_ps = np.array(avg_ps).reshape(c, -1)
     return np.mean(avg_ps)
 
 
@@ -340,7 +342,7 @@ def darkcapsule_acc(y, y_hat, params):
 
     y_hat = np.sum((y_hat * np.expand_dims(y_cls, 4)), 3).squeeze()
     y_hat = np.concatenate((y_hat[:,:,:,:5], y_hat_cls), 3)
-    print(y_hat.shape)
+    
     y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
     y_hat_im_idx, y_hat_bx, _ = utils.y_to_boxes_vec(
         y_hat, params, conf_th=conf_th)

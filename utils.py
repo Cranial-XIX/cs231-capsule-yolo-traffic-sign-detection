@@ -322,6 +322,23 @@ def y_to_boxes_vec(y, params, image_hw = None, conf_th = 0.5):
         classes = None
     return image_indices, xy, classes
 
+def combine_y_hat(images, dark_y_hat, class_y_hat, image_indices, boxes_xy, params):
+    batch_size, n_grid, _, B = dark_y_hat.shape
+    n_classes = class_y_hat.shape[1]
+
+    y_hat = np.zeros((batch_size, n_grid, n_grid, B + n_classes))
+    y_hat[:, :, :, 0:B] = dark_y_hat
+
+    for i, index in enumerate(image_indices):
+        box_xy = boxes_xy[i]
+        orig_hw = images[index].shape[0:2]
+        resized_hw = (params.darknet_input, params.darknet_input)
+        resized_box_xy = resize_box_xy(orig_hw, resized_hw, box_xy)
+        box_cwh = xy_to_cwh(box_xy)
+        (xc, yc, w, h), (row, col) = normalize_box_cwh(resized_hw, params.n_grid, box_cwh)
+        y_hat[index, row, col, B:] = class_y_hat[i, :]
+    return y_hat
+
 def cwh_to_xy_torch(cwh, img_size, n_grid):
     """ Convert normalized center, width, height of a box to upper left and lower 
         right coordinates (torch version). 

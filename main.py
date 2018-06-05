@@ -298,16 +298,20 @@ if __name__ == '__main__':
             args.combine in ('cnn', 'capsule')
 
         x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
+        
 
         if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            recog_auc(y, y_hat, params, save = True)
+            pr = recog_pr(y, y_hat, params)
             acc = recog_acc(y, y_hat, params)
+            auc = recog_auc(y, y_hat, params)
+            print("pr:", pr)
             print("acc:", acc)
+            print("auc")
 
         if detect_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            ap = detect_AP(y, y_hat, params, save = True)
+            ap = detect_AP(y, y_hat, params, show = True)
             print("ap:", ap)
 
         if combine_model:
@@ -317,9 +321,11 @@ if __name__ == '__main__':
             class_model = class_model(class_params) \
                           .to(device=class_params.device)
 
-            dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
+            y_hat, output = dark_class_pred(x, model, model_dir, params, 
             class_model, class_model_dir, class_params, args.restore)
-        
+
+            mAP = detect_and_recog_mAP(y, y_hat, params, show = False, save = True)
+            print("mAP:", mAP)
 
         if detect_model or combine_model:
             save_dir = os.path.join(model_dir, 'output')
