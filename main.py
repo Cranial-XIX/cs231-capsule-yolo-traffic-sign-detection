@@ -153,7 +153,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     losses_ev = []
     metrics_tr = []
     metrics_ev = []
-    best_metric_ev = float('inf')
+    best_metric_ev = float('-inf')
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
