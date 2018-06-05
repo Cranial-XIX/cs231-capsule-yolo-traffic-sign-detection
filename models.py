@@ -142,10 +142,12 @@ class DarkNet(nn.Module):
             ('conv_3', nn.Conv2d(64, 128, 3, padding=1, bias=False)),
             ('bn_3', nn.BatchNorm2d(128, momentum=0.01)),
             ('relu_3', nn.LeakyReLU(0.1)),
+            ('drop_3', nn.Dropout(params.dropout)),
 
             ('conv_4', nn.Conv2d(128, 64, 1, bias=False)),
             ('bn_4', nn.BatchNorm2d(64, momentum=0.01)),
             ('relu_4', nn.LeakyReLU(0.1)),
+            ('drop_4', nn.Dropout(params.dropout)),
 
             ('conv_5', nn.Conv2d(64, 128, 3, padding=1, bias=False)),
             ('bn_5', nn.BatchNorm2d(128, momentum=0.01)),
@@ -155,10 +157,12 @@ class DarkNet(nn.Module):
             ('conv_6', nn.Conv2d(128, 256, 3, padding=1, bias=False)),
             ('bn_6', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_6', nn.LeakyReLU(0.1)),
+            ('drop_6', nn.Dropout(params.dropout)),
 
             ('conv_7', nn.Conv2d(256, 128, 1, bias=False)),
             ('bn_7', nn.BatchNorm2d(128, momentum=0.01)),
             ('relu_7', nn.LeakyReLU(0.1)),
+            ('drop_7', nn.Dropout(params.dropout)),
 
             ('conv_8', nn.Conv2d(128, 256, 3, padding=1, bias=False)),
             ('bn_8', nn.BatchNorm2d(256, momentum=0.01)),
@@ -168,18 +172,22 @@ class DarkNet(nn.Module):
             ('conv_9', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
             ('bn_9', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_9', nn.LeakyReLU(0.1)),
+            ('drop_9', nn.Dropout(params.dropout)),
 
             ('conv_10', nn.Conv2d(512, 256, 1, bias=False)),
             ('bn_10', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_10', nn.LeakyReLU(0.1)),
+            ('drop_10', nn.Dropout(params.dropout)),
 
             ('conv_11', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
             ('bn_11', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_11', nn.LeakyReLU(0.1)),
+            ('drop_11', nn.Dropout(params.dropout)),
 
             ('conv_12', nn.Conv2d(512, 256, 1, bias=False)),
             ('bn_12', nn.BatchNorm2d(256, momentum=0.01)),
             ('relu_12', nn.LeakyReLU(0.1)),
+            ('drop_12', nn.Dropout(params.dropout)),
 
             ('conv_13', nn.Conv2d(256, 512, 3, padding=1, bias=False)),
             ('bn_13', nn.BatchNorm2d(512, momentum=0.01)),
@@ -189,22 +197,27 @@ class DarkNet(nn.Module):
             ('conv_14', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_14', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_14', nn.LeakyReLU(0.1)),
+            ('drop_14', nn.Dropout(params.dropout)),
 
             ('conv_15', nn.Conv2d(1024, 512, 1, bias=False)),
             ('bn_15', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_15', nn.LeakyReLU(0.1)),
+            ('drop_15', nn.Dropout(params.dropout)),
 
             ('conv_16', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_16', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_16', nn.LeakyReLU(0.1)),
+            ('drop_16', nn.Dropout(params.dropout)),
 
             ('conv_17', nn.Conv2d(1024, 512, 1, bias=False)),
             ('bn_17', nn.BatchNorm2d(512, momentum=0.01)),
             ('relu_17', nn.LeakyReLU(0.1)),
+            ('drop_17', nn.Dropout(params.dropout)),
 
             ('conv_18', nn.Conv2d(512, 1024, 3, padding=1, bias=False)),
             ('bn_18', nn.BatchNorm2d(1024, momentum=0.01)),
             ('relu_18', nn.LeakyReLU(0.1)),
+            ('drop_18', nn.Dropout(params.dropout)),
 
             ('conv_19', nn.Conv2d(1024,
                 5 * params.n_boxes + params.n_classes, 1, bias=False))
