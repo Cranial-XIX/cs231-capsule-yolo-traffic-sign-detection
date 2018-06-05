@@ -14,13 +14,13 @@ def capsule_loss(scores, y, params, x=None, recon=None):
     labels = torch.eye(params.n_classes).to(
         params.device).index_select(dim=0, index=y)
     margin = labels * left + 0.5 * (1. - labels) * right
-    margin_loss = margin.sum() / y.size(0)
+    margin_loss = margin.sum()
 
     recon_loss = 0
     if params.recon:
-        recon_loss = F.mse_loss(x, recon, size_average=False)
+        recon_loss = params.recon_coef * F.mse_loss(x, recon, size_average=False)
 
-    return margin_loss + recon_loss
+    return (margin_loss + recon_loss) / y.size(0)
 
 
 def compute_iou_xy(boxes_pred, boxes_true):

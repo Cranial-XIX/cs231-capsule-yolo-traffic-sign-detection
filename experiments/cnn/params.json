@@ -1,8 +1,8 @@
 {
-    "batch_size": 128,
+    "batch_size": 64,
     "n_classes": 43,
     "lr": 1e-3,
-    "n_epochs": 5,
+    "n_epochs": 3,
     "dropout_rate": 0.0,
     "lr_decay": 0.1
 }

@@ -29,11 +29,11 @@ parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 parser.add_argument('--train_frac', type=float, default=1, help='fraction of train data')
 parser.add_argument('--restore', default=None, help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
-parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
+parser.add_argument('--recon', help='if use reconstruction loss', action='store_false')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--eval_every', default=1, type=int, help='evaluate metric every # epochs')
 parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed layer in fine tuning')
-parser.add_argument('--no_metric', help='do not compute metric', action='store_false')
+parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
 
@@ -160,8 +160,8 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     to_frac = int(y_tr.shape[0] * params.train_frac)
     x_tr, y_tr = x_tr[:to_frac], y_tr[:to_frac]
 
-    # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
+    #scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=1)
     
     for epoch in range(params.n_epochs):
         if_eval = ((epoch+1) % params.eval_every == 0)
@@ -170,7 +170,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         loss_ev, metric_ev = evaluate(
             x_ev, y_ev, model, loss_fn, metric, params, if_eval)
 
-        scheduler.step()
+        scheduler.step(loss_tr)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
