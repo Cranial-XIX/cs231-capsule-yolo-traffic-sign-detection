@@ -235,6 +235,7 @@ def detect_AP(y, y_hat, params, show=False, save=False):
     avg_ps = np.array(avg_ps)
     return np.mean(avg_ps)
 
+
 def detect_acc(y, y_hat, params):
     conf_th = 0.5
     iou_th = 0.5
@@ -253,6 +254,27 @@ def detect_acc(y, y_hat, params):
     p, r = precision_and_recall(TP, FP, FN)
     avg_pr = (p + r) / 2
     return avg_pr
+
+
+def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
+    conf_th = 0.5
+    iou_th = 0.5
+    y_im_idx, y_bx, y_cls = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
+    y_hat_im_idx, y_hat_bx, y_hat_cls = utils.y_to_boxes_vec(
+        y_hat, params, conf_th=conf_th)
+
+    TP = FP = FN = 0
+    for c in range(params.n_classes):
+        for j in im_indices:
+            y_ = y_bx[(y_im_idx == j) * (y_cls == c)]
+            y_hat_ = y_hat_bx[(y_hat_im_idx == j) * (y_hat_cls == c)]
+            tp, fp, fn = single_img_confusion(y_, y_hat_, iou_th)
+            TP += tp
+            FP += fp
+            FN += fn
+    p, r = precision_and_recall(TP, FP, FN)
+    return int(p*100) + r
+
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
     iou_ths = np.linspace(0.5, 0.95, 10)
