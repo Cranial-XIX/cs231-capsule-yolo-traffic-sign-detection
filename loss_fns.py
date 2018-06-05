@@ -18,7 +18,7 @@ def capsule_loss(scores, y, params, x=None, recon=None):
 
     recon_loss = 0
     if params.recon:
-        recon_loss = F.mse_loss(x, recon)
+        recon_loss = F.mse_loss(x, recon, size_average=False)
 
     return margin_loss + recon_loss
 

@@ -4,12 +4,7 @@
     "n_classes": 43,
     "lr": 1e-3,
     "n_epochs": 32,
-<<<<<<< HEAD
-    "dropout_rate": 0.8,
-    "lr_decay": 0.1
-=======
     "dropout_rate": 0.2,
     "lr_decay": 0.1,
     "weight_decay": 1e-2
->>>>>>> 083954bfe8d696b2a62f204204e0ebae73b8c9c6
 }
