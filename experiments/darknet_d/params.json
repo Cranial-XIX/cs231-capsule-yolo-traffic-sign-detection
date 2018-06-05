@@ -1,15 +1,15 @@
 {
     "learning_rate": 3e-3,
     "batch_size": 32,
-    "n_epochs": 50,
-    "lr_decay": 0.5,
+    "n_epochs": 100,
+    "lr_decay": 1,
     "fine_tune": 18,
     "cuda": true,
     "l_coord": 5,
     "l_noobj": 0.5,
-    "n_boxes": 2,
+    "n_boxes": 1,
     "n_classes": 0,
-    "darknet_input": 224,
+    "darknet_input": 448,
     "capsule_input": 32,
-    "n_grid": 7
+    "n_grid": 14
 }
