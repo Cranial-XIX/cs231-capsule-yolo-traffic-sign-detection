@@ -273,7 +273,7 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
             FP += fp
             FN += fn
     p, r = precision_and_recall(TP, FP, FN)
-    return int(p*100) + r
+    return 2*p*r/(p+r+1e-8)
 
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
