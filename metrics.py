@@ -305,6 +305,36 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
     return np.mean(avg_ps)
 
 
+def darkcapsule_acc(y, y_hat, params):
+    conf_th = 0.5
+    iou_th = 0.5
+    y_cls = y[:,:,:,5:]
+    cap_other = y_hat[:,:,:,:,5:]
+    y_hat_cls = np.argmax(np.sum((cap_other ** 2), -1) ** 0.5, -1)
+    B, g, _ = y_hat_cls.shape
+    y_hat_cls = np.eye(params.n_classes)[y_hat_cls.reshape(-1)].reshape(
+        B,g,g,-1)
+
+    y_hat = np.sum((y_hat * np.expand_dims(y_cls, 4)), 3).squeeze()
+    y_hat = np.concatenate((y_hat[:,:,:,:5], y_hat_cls), 3)
+    print(y_hat.shape)
+    y_im_idx, y_bx, _ = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
+    y_hat_im_idx, y_hat_bx, _ = utils.y_to_boxes_vec(
+        y_hat, params, conf_th=conf_th)
+    im_indices = np.arange(y.shape[0])
+
+    TP = FP = FN = 0
+    for j in im_indices:
+        y_, y_hat_ = y_bx[y_im_idx == j], y_hat_bx[y_hat_im_idx == j]
+        tp, fp, fn = single_img_confusion(y_, y_hat_, iou_th)
+        TP += tp
+        FP += fp
+        FN += fn
+    
+    p, r = precision_and_recall(TP, FP, FN)
+    return int(p*100) + r
+
+
 if __name__ == "__main__":
     # please see the following tests to understand how to
     # use those metrics

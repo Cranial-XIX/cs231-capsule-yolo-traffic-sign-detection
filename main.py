@@ -9,7 +9,7 @@ import time
 import torch
 import utils
 
-from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc
+from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc, darkcapsule_acc
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
@@ -119,7 +119,7 @@ def evaluate(x, y, model, loss_fn, metric, params, if_eval=True):
                 loss = loss_fn(y_hat_bch, y_bch, params)
 
             y_hat.append(y_hat_bch.data.cpu().numpy())
-            avg_loss += loss / n_batch
+            avg_loss += loss.item() / n_batch
 
             if args.model == 'darknet_d':
                 avg_iou += params.avg_iou.item() / n_batch
@@ -226,6 +226,10 @@ def load_params(model_dir, args):
     params.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     params.seed = args.seed
     params.dropout = args.dropout
+    params.model = args.model
+    params.recon = args.recon
+    params.recon_coef = args.recon_coef
+    params.eval_every = args.eval_every
 
     params.writer = SummaryWriter()
     return params
@@ -238,10 +242,6 @@ if __name__ == '__main__':
         model_dir= args.model_dir
         
     params = load_params(model_dir, args)
-    params.model = args.model
-    params.recon = args.recon
-    params.recon_coef = args.recon_coef
-    params.eval_every = args.eval_every
 
     # set random seed for reproducibility
     np.random.seed(args.seed)
@@ -254,7 +254,7 @@ if __name__ == '__main__':
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
-        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, darkcapsule_acc),
     }
 
     model, loss_fn, predict_fn, metric = model_loss_predict[args.model]
