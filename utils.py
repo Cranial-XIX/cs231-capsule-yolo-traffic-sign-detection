@@ -137,6 +137,12 @@ def shuffle(x, y):
     i = np.random.permutation(len(y))
     return x[i], y[i]
 
+def shuffle_aug(x, y, x_aug, y_aug):
+    x_shape, y_shape = x_aug.shape, y_aug.shape
+    x_aug, y_aug = x_aug.reshape(x.shape[0], -1), y_aug.reshape(y.shape[0], -1)
+    i = np.random.permutation(len(y))
+    return x[i], y[i], x_aug[i].reshape(*x_shape), y_aug[i].reshape(*y_shape)
+
 def get_image_name(i):
     if i < 10:
         name = '0000' + str(i) + '.ppm'
