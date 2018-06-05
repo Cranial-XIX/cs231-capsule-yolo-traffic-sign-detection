@@ -166,9 +166,9 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
     X_te = np.concatenate((X_te, X_te_aug),axis=0)
     Y_te = np.concatenate((Y_te, Y_te_aug),axis=0)
 
-    pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
-    pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
-    pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'))
+    pickle.dumps((X_tr, Y_tr), open(root+'/train.p', 'wb'))
+    pickle.dumps((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
+    pickle.dumps((X_te, Y_te), open(root+'/test.p', 'wb'))
     
     # Get names for each class
     class_names = np.loadtxt(data_dir+'/Readme.txt', skiprows=39, delimiter = '\n', dtype = str)
