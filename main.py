@@ -34,7 +34,6 @@ parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficie
 parser.add_argument('--eval_every', default=1, type=int, help='evaluate metric every # epochs')
 parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed layer in fine tuning')
 parser.add_argument('--no_metric', help='do not compute metric', action='store_false')
-parser.add_argument('--save', default=False, help='save result', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
 
@@ -293,19 +292,25 @@ if __name__ == '__main__':
             print('Must give restore file last/bast')
             sys.exit()
 
+        class_model = args.model in ('cnn', 'capsule')
+        detect_model = args.model in ('darknet_d', 'darknet_r') and args.combine is None
+        combine_model = args.model in ('darknet_d', 'darknet_r') and \
+            args.combine in ('cnn', 'capsule')
+
         x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
-        # x = x[0:100]
-        # y = y[0:100]
 
-        if args.combine is None:
+        if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            # pickle.dump((y, y_hat), open('./debug/{}.p'.format(args.model), 'wb'))
-        else:
-            if args.model not in ('darknet_d', 'darknet_r') or \
-            args.combine not in ('cnn', 'capsule'):
-                print("Invalid combine")
-                sys.exit()
+            recog_auc(y, y_hat, params, save = True)
+            acc = recog_acc(y, y_hat, params)
+            print("acc:", acc)
 
+        if detect_model:
+            y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
+            ap = detect_AP(y, y_hat, params, save = True)
+            print("ap:", ap)
+
+        if combine_model:
             class_model_dir = get_data_and_model_dir(args.combine)[1]
             class_params = load_params(class_model_dir, args)
             class_model = model_loss_predict[args.combine][0]
@@ -313,26 +318,17 @@ if __name__ == '__main__':
                           .to(device=class_params.device)
 
             dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
-                class_model, class_model_dir, class_params, args.restore)
+            class_model, class_model_dir, class_params, args.restore)
+        
 
-            # pickle.dump((y, dark_y_hat, class_y_hat), open('./debug/{}-{}.p'.format(args.model, args.combine), 'wb'))
-
-        if args.save:
-            save_dir = os.path.join(model_dir, 'result')
+        if detect_model or combine_model:
+            save_dir = os.path.join(model_dir, 'output')
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
+            for i, image in enumerate(output):
+                cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
 
-            if args.model in ('darknet_d', 'darknet_r'):
-                for i, image in enumerate(output):
-                    cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
-                print(detect_acc(y, y_hat, params))
-
-        if args.show:
-            if args.model in ('darknet_d', 'darknet_r'):
+            if args.show:
                 for i, image in enumerate(output[0:10]):
                     cv2.imshow(str(i), image)
                 cv2.waitKey(0)
-
-                detect_AP(y, y_hat, params, show = True)
-            else:
-                print("acc", np.mean(y == output))
