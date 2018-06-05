@@ -18,6 +18,7 @@ from torch.optim import Adam, lr_scheduler
 from torchsummary import summary
 from tqdm import trange, tqdm
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='cnn', help=' | '.join(config.model_names))
 parser.add_argument('--mode', default='train', help='train | predict | overfit')
@@ -25,6 +26,7 @@ parser.add_argument('--summary', default=True, help='if summarize model', action
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
+parser.add_argument('--train_frac', type=float, default=1, help='fraction of train data')
 parser.add_argument('--restore', default=None, help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
 parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
@@ -35,7 +37,6 @@ parser.add_argument('--no_metric', help='do not compute metric', action='store_f
 parser.add_argument('--save', default=False, help='save result', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
-
 
 
 def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
@@ -157,6 +158,9 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_loss_ev = float('inf')
 
     x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
+    to_frac = int(y_tr.shape[0] * params.train_frac)
+    x_tr, y_tr = x_tr[:to_frac], y_tr[:to_frac]
+
     # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
     
@@ -210,6 +214,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         np.save(os.path.join(model_dir, 'losses_ev'), losses_ev)
 
     params.writer.close()
+    return best_metric_ev
 
 
 def get_data_and_model_dir(model_name):
@@ -230,7 +235,7 @@ def load_params(model_dir, args):
     params.recon = args.recon
     params.recon_coef = args.recon_coef
     params.eval_every = args.eval_every
-
+    params.train_frac = args.train_frac
     params.writer = SummaryWriter()
     return params
 
@@ -273,9 +278,10 @@ if __name__ == '__main__':
     optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 
     if args.mode == 'train':
-        train_and_evaluate(model, optimizer, loss_fn, metric, params,
+        best_metric = train_and_evaluate(
+            model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, restore_file=args.restore)
-        
+
     if args.mode == 'overfit':
         utils.make_small_data(data_dir, 3)
         train_and_evaluate(
