@@ -140,14 +140,15 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
     print(X_aug.shape)
     print(Y_aug.shape)
 
-    split = data_size // 10
-    X_ev_aug = X_aug[:split]
-    Y_ev_aug = Y_aug[:split]
-    X_te_aug = X_aug[split:2*split]
-    Y_te_aug = Y_aug[split:2*split]
-    X_tr_aug = X_aug[2*split:]
-    Y_tr_aug = Y_aug[2*split:]
+    split_aug = data_size * aug_size // 10
+    X_ev_aug = X_aug[:split_aug]
+    Y_ev_aug = Y_aug[:split_aug]
+    X_te_aug = X_aug[split_aug:2*split_aug]
+    Y_te_aug = Y_aug[split_aug:2*split_aug]
+    X_tr_aug = X_aug[2*split_aug:]
+    Y_tr_aug = Y_aug[2*split_aug:]
     
+    split = data_size // 10
     X_ev = X[:split]
     Y_ev = Y[:split]
     X_te = X[split:2*split]
@@ -300,10 +301,10 @@ def gtsdb_aug_(params, image, box_xy, classes):
     # X_aug, Y_aug = np.array(X_aug), np.array(Y_aug)
 
     return X_aug, Y_aug
-    
+
 if __name__ == "__main__":
     args = parser.parse_args()
     np.random.seed(0)
-    gtsrb()
+    # gtsrb()
     params = utils.Params('./experiments/darknet_r/params.json')
     gtsdb(params, aug_size=int(args.aug))
