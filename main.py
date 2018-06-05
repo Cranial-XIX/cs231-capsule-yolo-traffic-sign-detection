@@ -182,9 +182,9 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
                 'optim_dict' : optimizer.state_dict()
-            }, 
+            },
             is_best=is_best,
-            checkpoint=model_dir)
+            checkpoint=model_dir+str(params.train_frac))
 
         # If best_eval, best_save_path
         if is_best:
