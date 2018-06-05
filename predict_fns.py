@@ -40,7 +40,7 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, con
                                       transforms.ToTensor()])
     x = torch.stack([transformer(image) for image in images])
 
-    model.eval()
+    model.train()
     with torch.no_grad():
         x = x.to(device=params.device, dtype=torch.float32)
         y_hat = model(x)
