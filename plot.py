@@ -23,14 +23,14 @@ def draw_boxes(image, xy, classes = None):
 
     for i in range(xy.shape[0]):
         x1, y1, x2, y2 = xy[i].astype(int)
-        cv2.rectangle(new_img, (x1, y1), (x2, y2), (255, 0, 0), 1)
+        cv2.rectangle(new_img, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
         if classes is not None:
             c = int(classes[i])
             xc = (x1 + x2) // 2
             yc = (y1 + y2) // 2
             cv2.putText(new_img, class_names[c], (xc, yc), 
-                0, 0.5, (255, 0, 0))
+                0, 0.5, (0, 255, 0))
 
     return new_img, crops
 
