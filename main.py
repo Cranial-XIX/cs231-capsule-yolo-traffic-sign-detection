@@ -257,8 +257,8 @@ if __name__ == '__main__':
         'cnn'             : (ConvNet, cnn_loss, class_pred, recog_acc),
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
-        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
-        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
+        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_acc),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_acc),
     }
 
     model, loss_fn, predict_fn, metric = model_loss_predict[args.model]
@@ -297,8 +297,8 @@ if __name__ == '__main__':
         combine_model = args.model in ('darknet_d', 'darknet_r') and \
             args.combine in ('cnn', 'capsule')
 
-        x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
-        org_image_names = np.load(data_dir + '/eval_names.npy')
+        x, y = pickle.load(open(data_dir + '/test.p', 'rb'))
+        org_image_names = np.load(data_dir + '/test_names.npy')
         x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
 
         if class_model:
