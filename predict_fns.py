@@ -76,4 +76,6 @@ def dark_class_pred(images, dark_model, dark_model_dir, dark_params, class_model
     dark_y_hat, dark_crops, image_indices, boxes_xy = dark_pred(images, dark_model, dark_model_dir, dark_params, restore_file, is_end = False)
     class_y_hat, classes = class_pred(dark_crops, class_model, class_model_dir, class_params, restore_file)
     output_images, _ = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
-    return dark_y_hat, class_y_hat, output_images
+    y_hat = utils.combine_y_hat(images, dark_y_hat, class_y_hat, image_indices, boxes_xy, dark_params)
+    return y_hat, output_images
+

@@ -2,7 +2,7 @@ import config
 import numpy as np
 import cv2
 
-def draw_boxes(image, xy, classes = None):
+def draw_boxes(image, xy, classes = None, color=(0, 255, 0)):
     """ Plot boxes on one image.
         
     Args:
@@ -23,18 +23,18 @@ def draw_boxes(image, xy, classes = None):
 
     for i in range(xy.shape[0]):
         x1, y1, x2, y2 = xy[i].astype(int)
-        cv2.rectangle(new_img, (x1, y1), (x2, y2), (255, 0, 0), 1)
+        cv2.rectangle(new_img, (x1, y1), (x2, y2), color, 1)
 
         if classes is not None:
             c = int(classes[i])
             xc = (x1 + x2) // 2
             yc = (y1 + y2) // 2
             cv2.putText(new_img, class_names[c], (xc, yc), 
-                0, 0.5, (255, 0, 0))
+                0, 0.5, color)
 
     return new_img, crops
 
-def draw_boxes_vec(images, image_indices, xy, classes = None):
+def draw_boxes_vec(images, image_indices, xy, classes = None, color=(0, 255, 0)):
     """ Plot boxes on images (for a batch of images).
     
     Args:
@@ -54,9 +54,9 @@ def draw_boxes_vec(images, image_indices, xy, classes = None):
         mask = (image_indices == i)
             
         if classes is not None:
-            new_img, crops_img = draw_boxes(images[i], xy[mask], classes[mask])
+            new_img, crops_img = draw_boxes(images[i], xy[mask], classes[mask], color=color)
         else:
-            new_img, crops_img = draw_boxes(images[i], xy[mask])
+            new_img, crops_img = draw_boxes(images[i], xy[mask], color=color)
 
         new_images.append(new_img)
         crops_bch.append(crops_img)

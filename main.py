@@ -9,7 +9,7 @@ import time
 import torch
 import utils
 
-from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc, darkcapsule_acc
+from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc, darkcapsule_acc, detect_and_recog_acc
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
@@ -29,7 +29,7 @@ parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
 parser.add_argument('--train_frac', type=float, default=1, help='fraction of train data')
 parser.add_argument('--restore', default=None, help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
-parser.add_argument('--recon', default=False, help='if use reconstruction loss', action='store_true')
+parser.add_argument('--recon', help='if use reconstruction loss', action='store_false')
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--eval_every', default=1, type=int, help='evaluate metric every # epochs')
 parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed layer in fine tuning')
@@ -160,8 +160,8 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     to_frac = int(y_tr.shape[0] * params.train_frac)
     x_tr, y_tr = x_tr[:to_frac], y_tr[:to_frac]
 
-    # scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=params.lr_decay)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=params.lr_decay)
+    #scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=1)
     
     for epoch in range(params.n_epochs):
         if_eval = ((epoch+1) % params.eval_every == 0)
@@ -170,7 +170,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
         loss_ev, metric_ev = evaluate(
             x_ev, y_ev, model, loss_fn, metric, params, if_eval)
 
-        scheduler.step()
+        scheduler.step(loss_tr)
 
         params.writer.add_scalar('train_loss', loss_tr, epoch)
         params.writer.add_scalar('eval_loss', loss_ev, epoch)
@@ -257,8 +257,9 @@ if __name__ == '__main__':
         'cnn'             : (ConvNet, cnn_loss, class_pred, recog_acc),
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
-        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
+        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_acc),
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
+        'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_acc),
     }
 
     model, loss_fn, predict_fn, metric = model_loss_predict[args.model]
@@ -297,18 +298,28 @@ if __name__ == '__main__':
         combine_model = args.model in ('darknet_d', 'darknet_r') and \
             args.combine in ('cnn', 'capsule')
 
-        x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
+        x, y = pickle.load(open(data_dir + '/test.p', 'rb'))
+        if not class_model:
+            org_image_names = np.load(data_dir + '/test_names.npy')
+            x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
 
+        metric_out = {}
         if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            recog_auc(y, y_hat, params, save = True)
+            pr = recog_pr(y, y_hat, params)
             acc = recog_acc(y, y_hat, params)
-            print("acc:", acc)
+            auc = recog_auc(y, y_hat, params)
+            metric_out['recog_pr'] = pr
+            metric_out['recog_acc'] = acc
+            metric_out['recog_auc'] = auc
 
         if detect_model:
-            y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            ap = detect_AP(y, y_hat, params, save = True)
-            print("ap:", ap)
+            save_dir = model_dir + '/detect_ap'
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            y_hat, output = predict_fn(x, model, model_dir, params, args.restore, y=y)
+            ap = detect_AP(y, y_hat, params, save=True, save_dir = save_dir)
+            metric_out['detect_AP'] = ap
 
         if combine_model:
             class_model_dir = get_data_and_model_dir(args.combine)[1]
@@ -317,9 +328,27 @@ if __name__ == '__main__':
             class_model = class_model(class_params) \
                           .to(device=class_params.device)
 
-            dark_y_hat, class_y_hat, output = dark_class_pred(x, model, model_dir, params, 
+            y_hat, output = dark_class_pred(x, model, model_dir, params, 
             class_model, class_model_dir, class_params, args.restore)
+
+            save_dir = model_dir + '/combine-{}_mAP'.format(args.combine)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            mAP = detect_and_recog_mAP(y, y_hat, params, save = True, save_dir = save_dir)
+            acc = detect_and_recog_acc(y, y_hat, params)
+
+            metric_out['detect_and_recog_mAP'] = mAP
+            metric_out['detect_and_recog_acc'] = acc
         
+        
+        save_dir = model_dir + "/metric_output.txt"
+        if combine_model:
+            save_dir = model_dir + "/combine-{}_metric_output.txt".format(args.combine)
+
+        with open(save_dir, "w") as text_file:
+            for k, v in metric_out.items():
+                text_file.write("{}:{}, ".format(k, v))
+                print("{}:{}, ".format(k, v))
 
         if detect_model or combine_model:
             save_dir = os.path.join(model_dir, 'output')
