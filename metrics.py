@@ -254,8 +254,7 @@ def detect_acc(y, y_hat, params):
         FN += fn
     
     p, r = precision_and_recall(TP, FP, FN)
-    avg_pr = (p + r) / 2
-    return avg_pr
+    return 2 * p * r / (p + r + 1e-8)
 
 
 def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
@@ -275,7 +274,7 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
             FP += fp
             FN += fn
     p, r = precision_and_recall(TP, FP, FN)
-    return 2*p*r/(p+r+1e-8)
+    return 2 * p * r / (p + r + 1e-8)
 
 
 def detect_and_recog_mAP(y, y_hat, params, show=False, save=False, save_dir=None):
