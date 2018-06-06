@@ -298,7 +298,8 @@ if __name__ == '__main__':
             args.combine in ('cnn', 'capsule')
 
         x, y = pickle.load(open(data_dir + '/eval.p', 'rb'))
-        
+        org_image_names = np.load(data_dir + '/eval_names.npy')
+        x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
 
         if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)

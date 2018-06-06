@@ -141,7 +141,7 @@ def shuffle_aug(x, y, x_aug, y_aug):
     x_shape, y_shape = x_aug.shape, y_aug.shape
     x_aug, y_aug = x_aug.reshape(x.shape[0], -1), y_aug.reshape(y.shape[0], -1)
     i = np.random.permutation(len(y))
-    return x[i], y[i], x_aug[i].reshape(*x_shape), y_aug[i].reshape(*y_shape)
+    return x[i], y[i], x_aug[i].reshape(*x_shape), y_aug[i].reshape(*y_shape), i
 
 def get_image_name(i):
     if i < 10:
@@ -203,7 +203,7 @@ def resize_box_xy(orig_hw, resized_hw, box_xy):
     return resized_xy
 
 def normalize_box_cwh(image_hw, n_grid, box_cwh):
-    # Normalize box height and weight to be 0-1
+    # Normalize box height and weight to be 0-1 
     image_h, image_w = image_hw
     xc, yc, box_w, box_h = box_cwh
     normalized_w = 1. * box_w / image_w
@@ -301,6 +301,7 @@ def y_to_boxes_vec(y, params, image_hw = None, conf_th = 0.5):
     y_boxes = y[:, :, :, 0:5*B]
     y_boxes = y_boxes.reshape(batch_size, n_grid, n_grid, B, 5)
     indices = np.argwhere(y_boxes[:, :, :, :, 0] > conf_th) #(num_boxes, 4)
+
     mask = y_boxes[:, :, :, :, 0] > conf_th
     cwh = y_boxes[mask, 1:5]
     image_indices = indices[:, 0]
@@ -334,7 +335,7 @@ def combine_y_hat(images, dark_y_hat, class_y_hat, image_indices, boxes_xy, para
         orig_hw = images[index].shape[0:2]
         resized_hw = (params.darknet_input, params.darknet_input)
         resized_box_xy = resize_box_xy(orig_hw, resized_hw, box_xy)
-        box_cwh = xy_to_cwh(box_xy)
+        box_cwh = xy_to_cwh(resized_box_xy)
         (xc, yc, w, h), (row, col) = normalize_box_cwh(resized_hw, params.n_grid, box_cwh)
         y_hat[index, row, col, B:] = class_y_hat[i, :]
     return y_hat

@@ -304,7 +304,7 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
                     TP += tp
                     FP += fp
                     FN += fn
-
+                        
                 p, r = precision_and_recall(TP, FP, FN)
                 precisions.append(p)
                 recalls.append(r)
@@ -325,6 +325,10 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
         if show:
             plt.legend()
             plt.show()
+
+    classes = np.sign(y[:, :, :, 5:].reshape(-1, 43).sum(axis=0)) # 43
+    mask = classes > 0
+    avg_ps = np.array(avg_ps).reshape(params.n_classes, -1)[mask]
 
     return np.mean(avg_ps)
 
