@@ -317,7 +317,7 @@ if __name__ == '__main__':
             save_dir = model_dir + '/detect_ap'
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
+            y_hat, output = predict_fn(x, model, model_dir, params, args.restore, y=y)
             ap = detect_AP(y, y_hat, params, save=True, save_dir = save_dir)
             metric_out['detect_AP'] = ap
 
