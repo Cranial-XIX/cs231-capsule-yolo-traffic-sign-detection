@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 import torch
 import config
 
-def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.5):
+def dark_pred(images, model, model_dir, params, restore_file, is_end = True, conf_th = 0.5, y = None):
     """ Darknet prediction 
     
     Args:
@@ -35,19 +35,20 @@ def dark_pred(images, model, model_dir, params, restore_file, is_end = True, con
         
     image_hw = np.array([image.shape[0:2] for image in images])
     input_hw = (params.darknet_input, params.darknet_input)
-    transformer = transforms.Compose([transforms.ToPILImage(),
-                                      transforms.Resize(input_hw), 
-                                      transforms.ToTensor()])
-    x = torch.stack([transformer(image) for image in images])
+    x = torch.Tensor([cv2.resize(image, input_hw) for image in images])
 
-    model.train()
+    model.eval()
     with torch.no_grad():
-        x = x.to(device=params.device, dtype=torch.float32)
+        x = x.permute(0, 3, 1, 2).to(device=params.device, dtype=torch.float32)
         y_hat = model(x)
 
     y_hat = y_hat.data.cpu().numpy()
     image_indices, boxes_xy, classes = utils.y_to_boxes_vec(y_hat, params, image_hw = image_hw, conf_th = conf_th)
     output_images, crops_bch = plot.draw_boxes_vec(images, image_indices, boxes_xy, classes)
+
+    if y is not None:
+        true_indices, true_xy, true_classes = utils.y_to_boxes_vec(y, params, image_hw = image_hw, conf_th = conf_th)
+        output_images, _ = plot.draw_boxes_vec(output_images, true_indices, true_xy, true_classes, color=(0,0,255))
 
     if is_end:
         return y_hat, output_images
