@@ -319,7 +319,6 @@ if __name__ == '__main__':
                 os.makedirs(save_dir)
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
             ap = detect_AP(y, y_hat, params, save=True, save_dir = save_dir)
-
             metric_out['detect_AP'] = ap
 
         if combine_model:
