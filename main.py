@@ -302,8 +302,6 @@ if __name__ == '__main__':
         if not class_model:
             org_image_names = np.load(data_dir + '/test_names.npy')
             x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
-        x = x[0:10]
-        y = y[0:10]
 
         metric_out = {}
         if class_model:
