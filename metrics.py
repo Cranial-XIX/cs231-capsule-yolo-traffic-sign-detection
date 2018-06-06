@@ -262,7 +262,8 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
     y_im_idx, y_bx, y_cls = utils.y_to_boxes_vec(y, params, conf_th=conf_th)
     y_hat_im_idx, y_hat_bx, y_hat_cls = utils.y_to_boxes_vec(
         y_hat, params, conf_th=conf_th)
-
+    im_indices = np.arange(y.shape[0])
+    
     TP = FP = FN = 0
     for c in range(params.n_classes):
         for j in im_indices:

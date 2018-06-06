@@ -9,7 +9,7 @@ import time
 import torch
 import utils
 
-from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc, darkcapsule_acc
+from metrics import recog_acc, recog_auc, recog_pr, detect_AP, detect_and_recog_mAP, detect_acc, darkcapsule_acc, detect_and_recog_acc
 from models import ConvNet, CapsuleNet, DarkNet, DarkCapsuleNet
 from loss_fns import cnn_loss, capsule_loss, dark_loss, darkcapsule_loss
 from predict_fns import dark_pred, class_pred, dark_class_pred
@@ -257,7 +257,7 @@ if __name__ == '__main__':
         'cnn'             : (ConvNet, cnn_loss, class_pred, recog_acc),
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
-        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_mAP),
+        'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_acc),
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
     }
 
