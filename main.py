@@ -258,11 +258,8 @@ if __name__ == '__main__':
         'capsule'         : (CapsuleNet, capsule_loss, class_pred, recog_acc),
         'darknet_d'       : (DarkNet, dark_loss, dark_pred, detect_acc),
         'darknet_r'       : (DarkNet, dark_loss, dark_pred, detect_and_recog_acc),
-<<<<<<< HEAD
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_mAP),
-=======
         'darkcapsule'     : (DarkCapsuleNet, darkcapsule_loss, None, detect_and_recog_acc),
->>>>>>> f84d4ec935f9d9b015e96703b8601782c40e1486
     }
 
     model, loss_fn, predict_fn, metric = model_loss_predict[args.model]
@@ -302,22 +299,30 @@ if __name__ == '__main__':
             args.combine in ('cnn', 'capsule')
 
         x, y = pickle.load(open(data_dir + '/test.p', 'rb'))
-        org_image_names = np.load(data_dir + '/test_names.npy')
-        x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
+        if not class_model:
+            org_image_names = np.load(data_dir + '/test_names.npy')
+            x = [cv2.imread(os.path.join(data_dir + '/raw_GTSDB', name)) for name in org_image_names]
+        x = x[0:10]
+        y = y[0:10]
 
+        metric_out = {}
         if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
             pr = recog_pr(y, y_hat, params)
             acc = recog_acc(y, y_hat, params)
             auc = recog_auc(y, y_hat, params)
-            print("pr:", pr)
-            print("acc:", acc)
-            print("auc")
+            metric_out['recog_pr'] = pr
+            metric_out['recog_acc'] = acc
+            metric_out['recog_auc'] = auc
 
         if detect_model:
+            save_dir = model_dir + '/detect_ap'
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            ap = detect_AP(y, y_hat, params, show = True)
-            print("ap:", ap)
+            ap = detect_AP(y, y_hat, params, save=True, save_dir = save_dir)
+
+            metric_out['detect_AP'] = ap
 
         if combine_model:
             class_model_dir = get_data_and_model_dir(args.combine)[1]
@@ -329,8 +334,24 @@ if __name__ == '__main__':
             y_hat, output = dark_class_pred(x, model, model_dir, params, 
             class_model, class_model_dir, class_params, args.restore)
 
-            mAP = detect_and_recog_mAP(y, y_hat, params, show = False, save = True)
-            print("mAP:", mAP)
+            save_dir = model_dir + '/combine-{}_mAP'.format(args.combine)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            mAP = detect_and_recog_mAP(y, y_hat, params, save = True, save_dir = save_dir)
+            acc = detect_and_recog_acc(y, y_hat, params)
+
+            metric_out['detect_and_recog_mAP'] = mAP
+            metric_out['detect_and_recog_acc'] = acc
+        
+        
+        save_dir = model_dir + "/metric_output.txt"
+        if combine_model:
+            save_dir = model_dir + "/combine-{}_metric_output.txt".format(args.combine)
+
+        with open(save_dir, "w") as text_file:
+            for k, v in metric_out.items():
+                text_file.write("{}:{}, ".format(k, v))
+                print("{}:{}, ".format(k, v))
 
         if detect_model or combine_model:
             save_dir = os.path.join(model_dir, 'output')

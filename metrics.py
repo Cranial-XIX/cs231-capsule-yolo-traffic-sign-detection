@@ -186,7 +186,7 @@ def average_precision(p, r):
     return avg_p
 
 
-def detect_AP(y, y_hat, params, show=False, save=False):
+def detect_AP(y, y_hat, params, show=False, save=False, save_dir = None):
     iou_ths = np.linspace(0.5, 0.95, 10)
     conf_ths = np.linspace(0, 1, 100)
 
@@ -230,7 +230,9 @@ def detect_AP(y, y_hat, params, show=False, save=False):
 
     if save:
         plt.legend()
-        plt.savefig(config.model_dir[params.model]+'/d_AP.png')
+        if save_dir is None:
+            save_dir = config.model_dir[params.model]
+        plt.savefig(save_dir+'/d_AP.png')
 
     avg_ps = np.array(avg_ps)
     return np.mean(avg_ps)
@@ -263,11 +265,6 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
     y_hat_im_idx, y_hat_bx, y_hat_cls = utils.y_to_boxes_vec(
         y_hat, params, conf_th=conf_th)
     im_indices = np.arange(y.shape[0])
-<<<<<<< HEAD
-    
-=======
-
->>>>>>> f84d4ec935f9d9b015e96703b8601782c40e1486
     TP = FP = FN = 0
     for c in range(params.n_classes):
         for j in im_indices:
@@ -281,7 +278,7 @@ def detect_and_recog_acc(y, y_hat, params, show=False, save=False):
     return 2*p*r/(p+r+1e-8)
 
 
-def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
+def detect_and_recog_mAP(y, y_hat, params, show=False, save=False, save_dir=None):
     params.n_classes = 43
     iou_ths = np.linspace(0.5, 0.95, 10)
     conf_ths = np.linspace(0, 1, 100)
@@ -324,8 +321,9 @@ def detect_and_recog_mAP(y, y_hat, params, show=False, save=False):
 
         if save:
             plt.legend()
-            plt.savefig(config.model_dir[params.model] +
-                '/d&r_mAP_class_{}.png'.format(c))
+            if save_dir is None:
+                save_dir = config.model_dir[params.model]
+            plt.savefig(save_dir+'/d&r_mAP_class_{}.png'.format(c))
 
         if show:
             plt.legend()
