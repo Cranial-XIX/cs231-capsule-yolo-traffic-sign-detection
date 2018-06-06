@@ -33,7 +33,7 @@ parser.add_argument('--recon', default=False, help='if use reconstruction loss',
 parser.add_argument('--recon_coef', default=5e-4, help='reconstruction coefficient')
 parser.add_argument('--eval_every', default=1, type=int, help='evaluate metric every # epochs')
 parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed layer in fine tuning')
-parser.add_argument('--no_metric', help='do not compute metric', action='store_false')
+parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
 

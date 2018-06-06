@@ -2,6 +2,7 @@ data/*
 runs/*
 debug/*
 *.pyc
+*.npy
 test.py
 params.py
 experiments/*/*.tar
