@@ -306,9 +306,10 @@ if __name__ == '__main__':
         metric_out = {}
         if class_model:
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore)
-            pr = recog_pr(y, y_hat, params)
+
+            pr = recog_pr(y, y_hat, params, save = True, save_dir=model_dir)
             acc = recog_acc(y, y_hat, params)
-            auc = recog_auc(y, y_hat, params)
+            auc = recog_auc(y, y_hat, params, save = True, save_dir=model_dir)
             metric_out['recog_pr'] = pr
             metric_out['recog_acc'] = acc
             metric_out['recog_auc'] = auc
@@ -319,7 +320,9 @@ if __name__ == '__main__':
                 os.makedirs(save_dir)
             y_hat, output = predict_fn(x, model, model_dir, params, args.restore, y=y)
             ap = detect_AP(y, y_hat, params, save=True, save_dir = save_dir)
+            acc = detect_acc(y, y_hat, params)
             metric_out['detect_AP'] = ap
+            metric_out['detect_acc'] = acc
 
         if combine_model:
             class_model_dir = get_data_and_model_dir(args.combine)[1]
@@ -356,6 +359,12 @@ if __name__ == '__main__':
                 os.makedirs(save_dir)
             for i, image in enumerate(output):
                 cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
+
+            # save_dir = os.path.join(model_dir, 'crops')
+            # if not os.path.exists(save_dir):
+            #     os.makedirs(save_dir)
+            # for i, image in enumerate(crops):
+            #     cv2.imwrite(os.path.join(save_dir, str(i) + '.jpg'), image)
 
             if args.show:
                 for i, image in enumerate(output[0:10]):

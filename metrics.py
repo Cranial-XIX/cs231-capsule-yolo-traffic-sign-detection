@@ -10,7 +10,7 @@ def recog_acc(y, y_hat, params):
     y_hat_pred = np.argmax(y_hat, axis=1)
     return np.sum(y == y_hat_pred) / y.shape[0]
 
-def recog_auc(y, y_hat, params, show=False, save=False):
+def recog_auc(y, y_hat, params, show=False, save=False, save_dir = None):
     n_classes = params.n_classes
     y = np.eye(n_classes)[y]
 
@@ -44,12 +44,14 @@ def recog_auc(y, y_hat, params, show=False, save=False):
         plt.show()
 
     if save:
-        plt.savefig(config.model_dir[params.model]+'/r_auc.png')
+        if save_dir is None:
+            save_dir = config.model_dir[params.model]
+        plt.savefig(save_dir + '/r_auc.png')
 
     return roc_auc['micro']
 
 
-def recog_pr(y, y_hat, params, show=False, save=False):
+def recog_pr(y, y_hat, params, show=False, save=False, save_dir = None):
     n_classes = params.n_classes
     y = np.eye(n_classes)[y]
 
@@ -87,7 +89,9 @@ def recog_pr(y, y_hat, params, show=False, save=False):
         plt.show()
 
     if save:
-        plt.savefig(config.model_dir[params.model]+'/r_pr.png')
+        if save_dir is None:
+            save_dir = config.model_dir[params.model]
+        plt.savefig(save_dir+'/r_pr.png')
 
     return average_precision['micro']
 
