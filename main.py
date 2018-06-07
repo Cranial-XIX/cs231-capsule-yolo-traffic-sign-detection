@@ -157,7 +157,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_metric_ev = float('-inf')
     best_loss_ev = float('inf')
 
-    x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small, args.npy)
+    x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small, npy=args.npy)
     to_frac = int(y_tr.shape[0] * params.train_frac)
     x_tr, y_tr = x_tr[:to_frac], y_tr[:to_frac]
 
@@ -284,7 +284,7 @@ if __name__ == '__main__':
             data_dir, model_dir, restore_file=args.restore)
 
     if args.mode == 'overfit':
-        utils.make_small_data(data_dir, 3)
+        utils.make_small_data(data_dir, 3, npy=args.npy)
         train_and_evaluate(
             model, optimizer, loss_fn, metric, params,
             data_dir, model_dir, is_small=True, restore_file=args.restore)

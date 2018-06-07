@@ -112,14 +112,12 @@ def load_data(data_dir, is_small=False, npy = False):
 
     return x_tr, y_tr, x_ev, y_ev
 
-
-def make_small_data(data_dir, n=128):
-    x_tr, y_tr, x_ev, y_ev = load_data(data_dir)
+def make_small_data(data_dir, n=128, npy = False):
+    x_tr, y_tr, x_ev, y_ev = load_data(data_dir, npy = npy)
     train_data_path = data_dir + '/' + config.tr_sm_d
     eval_data_path = data_dir + '/' + config.ev_sm_d
     pickle.dump((x_tr[:n], y_tr[:n]), open(train_data_path, 'wb'))
     pickle.dump((x_ev[:n], y_ev[:n]), open(eval_data_path, 'wb'))
-
 
 def center_rgb(x):
     return (x - 128.0) / 128
