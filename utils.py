@@ -88,7 +88,7 @@ def polar_transform(x):
 # =============================================================================
 # Data related utils
 # =============================================================================
-def load_data(data_dir, is_small=False):
+def load_data(data_dir, is_small=False, npy = False):
     if is_small:
         train_data_path = data_dir + config.tr_sm_d
         eval_data_path = data_dir + config.ev_sm_d
@@ -96,8 +96,20 @@ def load_data(data_dir, is_small=False):
         train_data_path = data_dir + config.tr_d
         eval_data_path = data_dir + config.ev_d
 
-    x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
-    x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
+    if not npy:
+        x_tr, y_tr = pickle.load(open(train_data_path, 'rb'))
+        x_ev, y_ev = pickle.load(open(eval_data_path, 'rb'))
+    else:
+        train_data_path = train_data_path.split('.')[0]
+        eval_data_path = eval_data_path.split('.')[0]
+        train_X_path = train_data_path + '_X.npy'
+        eval_X_path = eval_data_path +'_X.npy'
+        train_Y_path = train_data_path + '_Y.npy'
+        eval_Y_path = eval_data_path +'_Y.npy'
+
+        x_tr, y_tr = np.load(train_X_path), np.load(train_Y_path)
+        x_ev, y_ev = np.load(eval_X_path), np.load(eval_Y_path)
+
     return x_tr, y_tr, x_ev, y_ev
 
 

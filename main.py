@@ -36,6 +36,7 @@ parser.add_argument('--fine_tune', default=-1, type=int, help='number of fixed l
 parser.add_argument('--no_metric', help='do not compute metric', action='store_true')
 parser.add_argument('--model_dir', default=None, help='model dir')
 parser.add_argument('--show', default=False, help='save result', action='store_true')
+parser.add_argument('--npy', default=False, help='data is npy file', action='store_true')
 
 
 def train(x, y, model, optimizer, loss_fn, metric, params, if_eval=True):
@@ -156,7 +157,7 @@ def train_and_evaluate(model, optimizer, loss_fn, metric, params,
     best_metric_ev = float('-inf')
     best_loss_ev = float('inf')
 
-    x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small)
+    x_tr, y_tr, x_ev, y_ev = utils.load_data(data_dir, is_small, args.npy)
     to_frac = int(y_tr.shape[0] * params.train_frac)
     x_tr, y_tr = x_tr[:to_frac], y_tr[:to_frac]
 
