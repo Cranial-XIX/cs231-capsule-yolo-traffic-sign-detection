@@ -25,7 +25,7 @@ parser.add_argument('--mode', default='train', help='train | predict | overfit')
 parser.add_argument('--summary', default=True, help='if summarize model', action='store_true')
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
-parser.add_argument('--dropout', type=float, default=0.5, help='dropout rate')
+parser.add_argument('--dropout', type=float, default=-1, help='dropout rate')
 parser.add_argument('--train_frac', type=float, default=1, help='fraction of train data')
 parser.add_argument('--restore', default=None, help="last | best")
 parser.add_argument('--combine', default=None, help="darknet_r | darknet_d")
@@ -230,7 +230,8 @@ def load_params(model_dir, args):
 
     params.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     params.seed = args.seed
-    params.dropout = args.dropout
+    if args.dropout >= 0:
+        params.dropout = args.dropout
     params.model = args.model
     params.recon = args.recon
     params.recon_coef = args.recon_coef
