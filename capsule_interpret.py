@@ -27,13 +27,15 @@ def show(a, b):
 param_dir = './experiments/capsule'
 
 params = load_params(param_dir)
-x, y = pickle.load(open('./data/GTSRB/train_small.p', 'rb'))
+x, y = pickle.load(open('./data/GTSDB/eval.p', 'rb'))
 
 i = 0
 xxx = x[i]
 yy = y[i]
 
-
+print(np.min(xxx), np.max(xxx))
+print(xxx)
+'''
 xx = torch.from_numpy(xxx).float().unsqueeze(0).permute(0, 3, 1, 2).to(device=params.device)
 yy = torch.from_numpy(np.array(yy).reshape(1,)).to(device=params.device)
 
@@ -55,5 +57,5 @@ decoded = model.decoder(t)
 decoded = decoded.permute(0, 2, 3, 1).squeeze()
 
 show(xxx, decoded.data.numpy())
-
+'''
     
