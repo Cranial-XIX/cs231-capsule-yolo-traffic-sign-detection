@@ -131,11 +131,9 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
         X_tr_aug = X_aug[2*split_aug:]
         Y_tr_aug = Y_aug[2*split_aug:]
     else:
-        print(np.max(X), np.min(X))
         X = utils.center_rgb(X)
         print(np.max(X), np.min(X))
 
-    
     split = data_size // 10
     X_ev = X[:split]
     Y_ev = Y[:split]
@@ -155,7 +153,7 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
         X_te = np.concatenate((X_te, X_te_aug), axis=0)
         Y_te = np.concatenate((Y_te, Y_te_aug), axis=0)
 
-    #pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'), protocol=4.0)
+    pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'), protocol=4.0)
     pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'), protocol=4.0)
     pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'), protocol=4.0)
 
