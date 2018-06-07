@@ -117,25 +117,8 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
 
     X, Y = np.array(X), np.array(Y)
     X, Y, X_aug, Y_aug = utils.shuffle_aug(X, Y, X_aug, Y_aug)
+    X, X_aug = list(map(utils.center_rgb, [X, X_aug]))
 
-    # X, Y = np.array(X), np.array(Y)
-    # X, Y = utils.shuffle(X, Y)
-
-    # split = data_size // 10
-    # X_ev = X[:split]
-    # Y_ev = Y[:split]
-    # X_te = X[split:2*split]
-    # Y_te = Y[split:2*split]
-
-    # X_tr = X[2*split:]
-    # Y_tr = Y[2*split:]
-    
-    # # data augmentation
-    # if aug_size != 0:
-    #     print('data augmentationg begins:')
-    #     X_aug, Y_aug = gtsdb_aug(params, aug_size)
-    #     X_tr = np.concatenate((X_tr, X_aug), axis=0)
-    #     Y_tr = np.concatenate((Y_tr, Y_aug), axis=0)
     print('Augmentation shape:')
     print(X_aug.shape)
     print(Y_aug.shape)
