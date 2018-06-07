@@ -122,7 +122,7 @@ def make_small_data(data_dir, n=128):
 
 
 def center_rgb(x):
-    return (x - 128) / 128
+    return (x - 128.0) / 128
 
 
 def augmentation(x, model_name, max_shift=4, max_lightness_increase=0.05):
