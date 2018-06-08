@@ -104,36 +104,32 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
 
         Y.append(y)
 
-        if aug_size > 0:
-            # Data Augmentation
-            for itr in range(aug_size):
-                x_aug, y_aug = gtsdb_aug_(params, image, \
-                    box_coords[indices], classes[indices])
+        # Data Augmentation
+        for itr in range(aug_size):
+            x_aug, y_aug = gtsdb_aug_(params, image, \
+                box_coords[indices], classes[indices])
 
-                X_aug.append(x_aug)
-                Y_aug.append(y_aug)
+            X_aug.append(x_aug)
+            Y_aug.append(y_aug)
 
+
+    X_aug, Y_aug = np.array(X_aug).squeeze(), np.array(Y_aug).squeeze()
 
     X, Y = np.array(X), np.array(Y)
+    X, Y, X_aug, Y_aug, file_indices = utils.shuffle_aug(X, Y, X_aug, Y_aug)
 
-    if aug_size > 0:
-        X_aug, Y_aug = np.array(X_aug).squeeze(), np.array(Y_aug).squeeze()
-        X, Y, X_aug, Y_aug, _ = utils.shuffle_aug(X, Y, X_aug, Y_aug)
-        X, X_aug = list(map(utils.center_rgb, [X, X_aug]))
-        print('Augmentation shape:')
-        print(X_aug.shape)
-        print(Y_aug.shape)
-        split_aug = data_size * aug_size // 10
-        X_ev_aug = X_aug[:split_aug]
-        Y_ev_aug = Y_aug[:split_aug]
-        X_te_aug = X_aug[split_aug:2*split_aug]
-        Y_te_aug = Y_aug[split_aug:2*split_aug]
-        X_tr_aug = X_aug[2*split_aug:]
-        Y_tr_aug = Y_aug[2*split_aug:]
-    else:
-        X = utils.center_rgb(X)
-        print(np.max(X), np.min(X))
+    print('Augmentation shape:')
+    print(X_aug.shape)
+    print(Y_aug.shape)
 
+    split_aug = data_size * aug_size // 10
+    X_ev_aug = X_aug[:split_aug]
+    Y_ev_aug = Y_aug[:split_aug]
+    X_te_aug = X_aug[split_aug:2*split_aug]
+    Y_te_aug = Y_aug[split_aug:2*split_aug]
+    X_tr_aug = X_aug[2*split_aug:]
+    Y_tr_aug = Y_aug[2*split_aug:]
+    
     split = data_size // 10
     X_ev = X[:split]
     Y_ev = Y[:split]
@@ -145,17 +141,19 @@ def gtsdb(params, aug_size=0, root=config.GTSDB):
     X_small = X[0:2]
     Y_small = Y[0:2]
 
-    if aug_size > 0:
-        X_tr = np.concatenate((X_tr, X_tr_aug), axis=0)
-        Y_tr = np.concatenate((Y_tr, Y_tr_aug), axis=0)
-        X_ev = np.concatenate((X_ev, X_ev_aug), axis=0)
-        Y_ev = np.concatenate((Y_ev, Y_ev_aug), axis=0)
-        X_te = np.concatenate((X_te, X_te_aug), axis=0)
-        Y_te = np.concatenate((Y_te, Y_te_aug), axis=0)
+    if int(args.aug) > 0:
+        X_tr = np.concatenate((X_tr, X_tr_aug),axis=0)
+        Y_tr = np.concatenate((Y_tr, Y_tr_aug),axis=0)
+        X_ev = np.concatenate((X_ev, X_ev_aug),axis=0)
+        Y_ev = np.concatenate((Y_ev, Y_ev_aug),axis=0)
+        X_te = np.concatenate((X_te, X_te_aug),axis=0)
+        Y_te = np.concatenate((Y_te, Y_te_aug),axis=0)
 
-    pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'), protocol=4.0)
-    pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'), protocol=4.0)
-    pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'), protocol=4.0)
+    X_tr, X_ev, X_te = list(map(utils.center_rgb, [X_tr, X_ev, X_te]))    
+    
+    pickle.dump((X_tr, Y_tr), open(root+'/train.p', 'wb'))
+    pickle.dump((X_ev, Y_ev), open(root+'/eval.p', 'wb'))
+    pickle.dump((X_te, Y_te), open(root+'/test.p', 'wb'))
 
     # Get names for each class
     class_names = np.loadtxt(data_dir+'/Readme.txt', skiprows=39, delimiter = '\n', dtype = str)
