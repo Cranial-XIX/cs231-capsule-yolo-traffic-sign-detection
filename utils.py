@@ -70,7 +70,7 @@ def polar_transform(x):
     assert x.shape[-1] == 5, "polar transform failed, dimension mismatched"
     sh = x.shape
     x = x.view(-1, 5)
-    r, x, y, h, w = torch.chunk(x, 5, 1)
+    r, x, y, w, h = torch.chunk(x, 5, 1)
     f1, f2, f3, f4 = x*np.pi, y*np.pi, h*np.pi, w*np.pi*2
     (s1, c1), (s2, c2), (s3, c3), (s4, c4) = list(
         map(sine_and_cosine, [f1, f2, f3, f4]))
